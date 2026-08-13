@@ -1,15 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Bungee+Shade&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #6366f1;
-  --color-brand-dark: #4f46e5;
-  --color-accent: #ec4899;
-  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  /* Memphis color palette */
+  --color-cream: #FFF9E6;
+  --color-cream-pink: #FFF0F5;
+  --color-mem-red: #FF3B30;
+  --color-mem-blue: #007AFF;
+  --color-mem-green: #34C759;
+  --color-mem-orange: #FF9500;
+  --color-mem-black: #1A1A1A;
+  --color-mem-purple: #AF52DE;
+  --color-mem-yellow: #FFD60A;
+
+  /* Typography */
+  --font-display: "Archivo Black", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-body: "Space Grotesk", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-fancy: "Bungee Shade", "Archivo Black", system-ui, sans-serif;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --background: var(--color-cream);
+  --foreground: var(--color-mem-black);
 }
 
 html {
@@ -17,40 +29,130 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background: var(--color-cream);
+  color: var(--color-mem-black);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(circle, rgba(26, 26, 26, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-/* 打印样式 */
-@media print {
-  nav,
-  footer,
-  button,
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white;
-  }
-  main {
-    padding: 0 !important;
-  }
+/* ================= Memphis utility classes ================= */
+
+/* Hard offset shadow - the Memphis signature */
+.shadow-memphis {
+  box-shadow: 4px 4px 0 var(--color-mem-black);
+}
+.shadow-memphis-sm {
+  box-shadow: 2px 2px 0 var(--color-mem-black);
+}
+.shadow-memphis-lg {
+  box-shadow: 8px 8px 0 var(--color-mem-black);
 }
 
-/* 滚动条美化 */
+/* Thick black border */
+.border-memphis {
+  border: 2px solid var(--color-mem-black);
+}
+.border-memphis-thick {
+  border: 3px solid var(--color-mem-black);
+}
+
+/* Marker/highlighter underline */
+.marker-yellow {
+  background-image: linear-gradient(transparent 60%, var(--color-mem-yellow) 60%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 0 2px;
+}
+.marker-pink {
+  background-image: linear-gradient(transparent 60%, #FFB6C1 60%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 0 2px;
+}
+.marker-green {
+  background-image: linear-gradient(transparent 60%, #A7F3D0 60%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 0 2px;
+}
+
+/* Polka dots pattern background */
+.bg-polka {
+  background-image: radial-gradient(circle, var(--color-mem-black) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+.bg-polka-red {
+  background-image: radial-gradient(circle, var(--color-mem-red) 2px, transparent 2px);
+  background-size: 20px 20px;
+}
+.bg-polka-blue {
+  background-image: radial-gradient(circle, var(--color-mem-blue) 2px, transparent 2px);
+  background-size: 20px 20px;
+}
+
+/* Diagonal stripes */
+.bg-stripes {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-mem-black) 0px,
+    var(--color-mem-black) 2px,
+    transparent 2px,
+    transparent 10px
+  );
+}
+.bg-stripes-orange {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-mem-orange) 0px,
+    var(--color-mem-orange) 4px,
+    transparent 4px,
+    transparent 14px
+  );
+}
+
+/* Grid pattern */
+.bg-mem-grid {
+  background-image:
+    linear-gradient(rgba(26,26,26,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26,26,26,0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Font utility */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+.font-body {
+  font-family: var(--font-body);
+}
+.font-fancy {
+  font-family: var(--font-fancy);
+  line-height: 1;
+}
+
+/* Scrollbar - Memphis style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-cream-pink);
+  border-left: 2px solid var(--color-mem-black);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: var(--color-mem-red);
+  border: 2px solid var(--color-mem-black);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-mem-blue);
+}
+
+/* Print */
+@media print {
+  nav, footer, button, .no-print { display: none !important; }
+  body { background: white; background-image: none; }
+  main { padding: 0 !important; }
 }
