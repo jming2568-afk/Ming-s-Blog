@@ -120,7 +120,7 @@ export default function MediaUploader({
   };
 
   const hasPreview = !!previewUrl;
-  const showUploadButton = previewFile && !uploading;
+  const hasPendingFile = !!previewFile; // 文件已选中（含上传中），操作栏始终显示，避免按钮在上传时消失
 
   return (
     <div className="w-full space-y-3">
@@ -182,23 +182,29 @@ export default function MediaUploader({
           </div>
         </div>
       ) : (
-        <div className="relative bg-white border-memphis shadow-memphis-sm overflow-hidden isolate">
-          <button
-            type="button"
-            onClick={clear}
-            className="absolute top-2 right-2 z-20 w-9 h-9 bg-mem-red text-white border-memphis shadow-memphis-sm flex items-center justify-center hover:bg-white hover:text-mem-red transition-colors"
-            aria-label="移除"
-          >
-            <FiX size={18} />
-          </button>
+        <div className="bg-white border-memphis shadow-memphis-sm overflow-hidden">
+          {/* 顶部操作条：移除按钮独立成行，绝不叠在图片上 */}
+          <div className="flex items-center justify-between px-3 py-2 bg-mem-black text-white">
+            <span className="text-[11px] font-display tracking-wider">
+              {previewType === "video" ? "🎬 视频预览" : "🖼 图片预览"}
+            </span>
+            <button
+              type="button"
+              onClick={clear}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] font-display tracking-wide bg-mem-red text-white border-memphis shadow-memphis-sm hover:bg-white hover:text-mem-red transition-colors"
+              aria-label="移除"
+            >
+              <FiX size={13} /> 移除
+            </button>
+          </div>
 
-          {/* 固定高度预览：无论图片原始比例，绝不溢出覆盖下方按钮；图片可点击更换 */}
+          {/* 预览区：固定高度 + overflow-hidden，图片 object-contain 绝不溢出覆盖下方操作栏 */}
           <div
-            onClick={previewType === "image" ? () => inputRef.current?.click() : undefined}
-            title={previewType === "image" ? "点击更换图片" : undefined}
+            onClick={previewType === "image" && !uploading ? () => inputRef.current?.click() : undefined}
+            title={previewType === "image" && !uploading ? "点击更换图片" : undefined}
             className={cn(
-              "relative w-full h-44 sm:h-52 overflow-hidden bg-mem-grid flex items-center justify-center",
-              previewType === "image" && "cursor-pointer group"
+              "relative w-full h-48 overflow-hidden bg-mem-grid flex items-center justify-center",
+              previewType === "image" && !uploading && "cursor-pointer group"
             )}
           >
             {previewType === "video" ? (
@@ -212,52 +218,58 @@ export default function MediaUploader({
               <img
                 src={previewUrl}
                 alt="预览"
-                className="max-h-full max-w-full object-contain"
+                className="block max-h-full max-w-full object-contain min-h-0 min-w-0"
               />
             )}
-            {previewType === "image" && (
-              <span className="absolute bottom-1.5 right-1.5 z-10 px-2 py-0.5 bg-mem-black/70 text-white text-[10px] font-display tracking-wider opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            {previewType === "image" && !uploading && (
+              <span className="absolute bottom-2 right-2 px-2 py-1 bg-mem-black/75 text-white text-[10px] font-display tracking-wider opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 点击更换
               </span>
             )}
           </div>
 
-          {showUploadButton && (
-            <div className="p-4 border-t-[3px] border-mem-black flex flex-col sm:flex-row sm:items-center gap-3 justify-between relative z-[1]">
-              <div className="space-y-2 flex-1">
-                <p className="font-display text-mem-black text-sm flex items-center gap-2">
-                  {previewType === "video" ? (
-                    <>🎬 {previewFile?.name}</>
-                  ) : (
-                    <>🖼 {previewFile?.name}</>
+          {/* 操作栏：选中文件时始终显示（含上传中进度），独立区块，绝不与图片重叠 */}
+          {hasPendingFile ? (
+            <div className="p-4 border-t-[3px] border-mem-black bg-cream">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <p className="font-display text-mem-black text-sm flex items-center gap-2 truncate">
+                    {previewType === "video" ? "🎬" : "🖼"} {previewFile?.name}
+                  </p>
+                  {uploading && (
+                    <div className="h-3 bg-white border-memphis overflow-hidden">
+                      <motion.div
+                        className="h-full bg-mem-green"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ type: "tween", duration: 0.1 }}
+                      />
+                    </div>
                   )}
-                </p>
-                {uploading && (
-                  <div className="h-3 bg-cream border-memphis overflow-hidden">
-                    <motion.div
-                      className="h-full bg-mem-green"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ type: "tween", duration: 0.1 }}
-                    />
-                  </div>
-                )}
-                {error && (
-                  <p className="text-xs font-bold text-mem-red">{error}</p>
-                )}
+                  {error && (
+                    <p className="text-xs font-bold text-mem-red">{error}</p>
+                  )}
+                </div>
+                <UiButton color="red" onClick={doUpload} disabled={uploading} className="shrink-0">
+                  {uploading ? `上传中 ${Math.round(progress)}%` : "⬆ 上传到服务器"}
+                </UiButton>
               </div>
-              <UiButton color="red" onClick={doUpload} disabled={uploading}>
-                {uploading ? `上传中 ${Math.round(progress)}%` : "⬆ 上传到服务器"}
-              </UiButton>
             </div>
-          )}
-
-          {!showUploadButton && !uploading && value?.url && (
-            <div className="p-3 border-t-[3px] border-mem-black bg-mem-green/10">
-              <p className="text-xs font-body text-mem-black/70 break-all">
-                ✓ 已上传：<code className="marker-yellow">{value.url}</code>
-              </p>
-            </div>
+          ) : (
+            value?.url && (
+              <div className="p-3 border-t-[3px] border-mem-black bg-mem-green/10 flex items-center justify-between gap-2">
+                <p className="text-xs font-body text-mem-black/70 break-all flex-1 min-w-0">
+                  ✓ 已上传：<code className="marker-yellow">{value.url}</code>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="shrink-0 px-2.5 py-1 text-[11px] font-display tracking-wide bg-mem-blue text-white border-memphis shadow-memphis-sm hover:bg-white hover:text-mem-blue transition-colors"
+                >
+                  更换
+                </button>
+              </div>
+            )
           )}
         </div>
       )}
