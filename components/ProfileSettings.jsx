@@ -55,6 +55,35 @@ export default function ProfileSettings() {
 
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
+  // 媒体上传/移除后立即按字段持久化到 DB（复用局部 PUT），让"上传 = 保存 = 全站展示"
+  const persistMedia = async (field, url) => {
+    const setter = {
+      avatarUrl: setAvatarUrl,
+      certPhotoUrl: setCertPhotoUrl,
+      wechatQrUrl: setWechatQrUrl,
+    }[field];
+    const label = {
+      avatarUrl: "个人头像",
+      certPhotoUrl: "简历证件照",
+      wechatQrUrl: "微信二维码",
+    }[field];
+    setter(url); // 立即更新本地 state（UI 即时反馈）
+    setMsg("");
+    setError("");
+    try {
+      await updateSettings({ [field]: url });
+      setMsg(
+        url
+          ? `✅ ${label}已上传并保存，全站同步生效`
+          : `✅ ${label}已移除并保存`
+      );
+    } catch (e) {
+      setError(
+        `已更新但保存失败：${e.message || "服务器错误"}（可点击底部"保存个人资料"重试）`
+      );
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -136,7 +165,7 @@ export default function ProfileSettings() {
               key={`avatar-${avatarUrl}`}
               accept="image/*"
               value={{ url: avatarUrl, type: "image" }}
-              onUploaded={({ url }) => setAvatarUrl(url)}
+              onUploaded={({ url }) => persistMedia("avatarUrl", url)}
             />
           </div>
           <div className="min-w-0">
@@ -150,7 +179,7 @@ export default function ProfileSettings() {
               key={`cert-${certPhotoUrl}`}
               accept="image/*"
               value={{ url: certPhotoUrl, type: "image" }}
-              onUploaded={({ url }) => setCertPhotoUrl(url)}
+              onUploaded={({ url }) => persistMedia("certPhotoUrl", url)}
             />
           </div>
           <div className="min-w-0">
@@ -164,7 +193,7 @@ export default function ProfileSettings() {
               key={`qr-${wechatQrUrl}`}
               accept="image/*"
               value={{ url: wechatQrUrl, type: "image" }}
-              onUploaded={({ url }) => setWechatQrUrl(url)}
+              onUploaded={({ url }) => persistMedia("wechatQrUrl", url)}
             />
           </div>
         </div>
