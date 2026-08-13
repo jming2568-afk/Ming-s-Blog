@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import getDb, { ensureDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { normalizeError, json500 } from "@/lib/routeHelpers";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -9,13 +10,13 @@ export async function GET() {
     try {
       ensureDb();
     } catch (dbErr) {
-      console.error("[auth/session] db init error:", dbErr);
-      // 为了避免前端 safeJson 再次触发解析错误，这里必须保持 JSON 响应
+      const { message } = normalizeError(dbErr);
+      console.error("[auth/session] db init error:", message, dbErr);
       return NextResponse.json(
         {
           isLoggedIn: false,
-          error: "数据库初始化失败",
-          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+          error: "数据库初始化失败：" + message,
+          debug: IS_DEV ? message : undefined,
         },
         { status: 500 }
       );
@@ -34,11 +35,15 @@ export async function GET() {
     }
     return NextResponse.json({ isLoggedIn: true, user });
   } catch (err) {
+    // 会话 API 的 500 返回 isLoggedIn=false + 调试信息（与其它 500 格式不同，前端专门处理）
+    const { message, stack } = normalizeError(err);
     console.error("[auth/session] error:", err);
     return NextResponse.json(
       {
         isLoggedIn: false,
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
+        error: message,
+        debug: IS_DEV ? message : undefined,
+        stack: IS_DEV && stack ? stack.split("\n").slice(0, 8).join("\n") : undefined,
       },
       { status: 500 }
     );

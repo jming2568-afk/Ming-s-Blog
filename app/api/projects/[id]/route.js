@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import getDb, { ensureDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { json500 } from "@/lib/routeHelpers";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -43,14 +44,7 @@ export async function GET(req, { params }) {
     if (!row) return NextResponse.json({ error: "未找到" }, { status: 404 });
     return NextResponse.json({ ok: true, project: rowToProject(row) });
   } catch (err) {
-    console.error("[api/projects/:id GET] error:", err);
-    return NextResponse.json(
-      {
-        error: "读取失败",
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/projects/:id GET" });
   }
 }
 
@@ -119,14 +113,7 @@ export async function PUT(req, { params }) {
     const row = db.prepare("SELECT * FROM projects WHERE id = ?").get(id);
     return NextResponse.json({ ok: true, project: rowToProject(row) });
   } catch (err) {
-    console.error("[api/projects/:id PUT] error:", err);
-    return NextResponse.json(
-      {
-        error: "更新失败：" + (err?.message || "服务器错误"),
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/projects/:id PUT" });
   }
 }
 
@@ -142,13 +129,6 @@ export async function DELETE(req, { params }) {
     db.prepare("DELETE FROM projects WHERE id = ?").run(id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[api/projects/:id DELETE] error:", err);
-    return NextResponse.json(
-      {
-        error: "删除失败：" + (err?.message || "服务器错误"),
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/projects/:id DELETE" });
   }
 }

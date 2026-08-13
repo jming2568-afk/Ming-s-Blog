@@ -4,6 +4,7 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { getCurrentUser } from "@/lib/auth";
 import { ensureDb } from "@/lib/db";
+import { json500, normalizeError } from "@/lib/routeHelpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,32 +12,36 @@ export const dynamic = "force-dynamic";
 const MAX_IMAGE = 8 * 1024 * 1024; // 8 MB
 const MAX_VIDEO = 100 * 1024 * 1024; // 100 MB
 
-// 上传目录默认策略：与 lib/db.js 保持一致，避免 cwd 被切到 /var/task 时无处可写。
-// 预览/Serverless 下如果 UPLOAD_DIR 仍在 /var/task 里，则自动降级到 /tmp/<project>/public/uploads。
-function computeDefaultUploadDir() {
-  const workspace = process.env.TRAE_ENV_WORKSPACE || process.env.TRAE_WORKSPACE;
-  const cwd = process.cwd();
-  const candidate =
-    workspace && !cwd.startsWith("/var/task")
-      ? path.join(workspace, "public", "uploads")
-      : path.join(cwd, "public", "uploads");
-  if (
-    candidate.startsWith("/var/task/") ||
-    candidate === "/var/task" ||
-    cwd === "/var/task" ||
-    !isDirWritable(path.dirname(candidate))
-  ) {
-    const slug = (process.env.npm_package_name || "portfolio").replace(/[^a-zA-Z0-9_-]/g, "_") || "portfolio";
-    return path.join("/tmp", slug, "public", "uploads");
+// 上传目录默认策略：与 lib/db.js 对齐 — Vercel Serverless 下强制落到 /tmp 并挂静态路由兜底。
+// 本地开发则落到 <root>/public/uploads 以被 Next 静态服务直接暴露为 /uploads/*
+function detectProjectRoot() {
+  let cur = path.dirname(new URL(import.meta.url).pathname);
+  for (let i = 0; i < 10; i++) {
+    try {
+      const pj = path.join(cur, "package.json");
+      if (fs.existsSync(pj)) {
+        const txt = fs.readFileSync(pj, "utf8");
+        if (/"next"\s*:/.test(txt)) return cur;
+      }
+    } catch {}
+    const up = path.dirname(cur);
+    if (up === cur) break;
+    cur = up;
   }
-  return candidate;
+  return null;
+}
+function looksLikeVercelServerless() {
+  return Boolean(
+    process.env.VERCEL ||
+      process.env.VERCEL_ENV ||
+      process.env.VERCEL_URL ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.LAMBDA_TASK_ROOT
+  );
 }
 function isDirWritable(dir) {
   try {
-    if (!fs.existsSync(dir)) {
-      // 不强制创建，只对已存在的目录做写探测
-      return false;
-    }
+    if (!fs.existsSync(dir)) return false;
     const probe = path.join(dir, `.upload_probe_${process.pid}_${Date.now()}`);
     fs.writeFileSync(probe, "");
     fs.unlinkSync(probe);
@@ -44,6 +49,38 @@ function isDirWritable(dir) {
   } catch {
     return false;
   }
+}
+function computeDefaultUploadDir() {
+  const tmpSlug =
+    (process.env.npm_package_name || process.env.VERCEL_GIT_REPO_SLUG || "portfolio")
+      .replace(/[^a-zA-Z0-9_-]/g, "_") || "portfolio";
+
+  if (looksLikeVercelServerless()) {
+    // Vercel /tmp 是唯一可写目录；调用方会根据路径是否在 public/ 下决定走静态文件还是 /uploads 路由
+    return path.join("/tmp", tmpSlug, "public", "uploads");
+  }
+
+  const cwd = process.cwd();
+  if (cwd === "/var/task" || path.resolve(cwd).startsWith("/var/task")) {
+    return path.join("/tmp", tmpSlug, "public", "uploads");
+  }
+
+  const root = detectProjectRoot();
+  if (root) {
+    const candidate = path.join(root, "public", "uploads");
+    try {
+      fs.mkdirSync(candidate, { recursive: true });
+      if (isDirWritable(candidate)) return candidate;
+    } catch {}
+  }
+
+  const cwdCandidate = path.join(cwd, "public", "uploads");
+  try {
+    fs.mkdirSync(cwdCandidate, { recursive: true });
+    if (isDirWritable(cwdCandidate)) return cwdCandidate;
+  } catch {}
+
+  return path.join("/tmp", tmpSlug, "public", "uploads");
 }
 const UPLOAD_ROOT = process.env.UPLOAD_DIR || computeDefaultUploadDir();
 
@@ -78,11 +115,12 @@ export async function POST(req) {
       ensureDb();
     } catch (dbErr) {
       // 上传 API 本身不写 DB，但使用了 auth session；DB 初始化失败时给出 JSON 500，避免 HTML 错误页
-      console.error("[api/upload] db init error:", dbErr);
+      const { message } = normalizeError(dbErr);
+      console.error("[api/upload] db init error:", message, dbErr);
       return NextResponse.json(
         {
-          error: "服务初始化失败：" + (dbErr?.message || "未知错误"),
-          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+          error: "服务初始化失败：" + message,
+          debug: IS_DEV ? message : undefined,
         },
         { status: 500 }
       );
@@ -126,14 +164,19 @@ export async function POST(req) {
     fs.writeFileSync(fullPath, Buffer.from(arrayBuffer));
 
     // 生成对外可访问 URL。
-    // 若 UPLOAD_DIR 仍位于 <cwd>/public/uploads 下，走 Next.js 静态文件规则：/uploads/YYYY/MM/file.ext
-    // 若用户用自定义路径，需要配置 nginx/Next.js rewrites 指向该目录。
+    // 1) 若文件写到了某个 public/uploads 子目录（且 Next.js 静态服务能覆盖到），就走 /uploads/YYYY/MM/...
+    // 2) 若落到 /tmp 或 /var/task（Vercel Serverless 临时目录），前端直接访问 /uploads 找不到，改走 /api/uploads 动态读文件
+    // 3) 其它自定义目录场景：保持 /uploads，部署时需要自行配置 rewrite/静态服务
     const publicPrefix = path.resolve(process.cwd(), "public");
+    const inPublic = fullPath.startsWith(publicPrefix);
+    const inTmp = fullPath.startsWith("/tmp/") || fullPath.startsWith("/var/task/");
     let url;
-    if (fullPath.startsWith(publicPrefix)) {
+    if (inTmp) {
+      // /api/uploads/YYYY/MM/file.ext，由 /app/api/uploads/[...file]/route.js 从磁盘读回
+      url = `/api/uploads/${yyyy}/${mm}/${name}`;
+    } else if (inPublic) {
       url = `/uploads/${yyyy}/${mm}/${name}`;
     } else {
-      // 自定义目录场景：先给一个相对路径，实际部署时自行补 rewrite/静态服务
       url = `/uploads/${yyyy}/${mm}/${name}`;
     }
     return NextResponse.json({
@@ -145,13 +188,6 @@ export async function POST(req) {
       name: file.name || name,
     });
   } catch (err) {
-    console.error("[api/upload] error:", err);
-    return NextResponse.json(
-      {
-        error: "上传失败：" + (err?.message || "服务器错误"),
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/upload" });
   }
 }
