@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import getDb, { ensureDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { json500 } from "@/lib/routeHelpers";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -43,14 +44,7 @@ export async function GET() {
     const projects = rows.map(rowToProject);
     return NextResponse.json({ ok: true, projects });
   } catch (err) {
-    console.error("[api/projects GET] error:", err);
-    return NextResponse.json(
-      {
-        error: "读取失败",
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/projects GET" });
   }
 }
 
@@ -126,13 +120,6 @@ export async function POST(req) {
     const row = db.prepare("SELECT * FROM projects WHERE id = ?").get(info.lastInsertRowid);
     return NextResponse.json({ ok: true, project: rowToProject(row) });
   } catch (err) {
-    console.error("[api/projects POST] error:", err);
-    return NextResponse.json(
-      {
-        error: "创建失败：" + (err?.message || "服务器错误"),
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/projects POST" });
   }
 }

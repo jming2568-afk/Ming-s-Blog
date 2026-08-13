@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import getDb, { ensureDb } from "@/lib/db";
 import { verifyPassword, createSession } from "@/lib/auth";
+import { json500, normalizeError } from "@/lib/routeHelpers";
 
 // ========== 登录失败惩罚配置 ==========
 // 5 分钟滑动窗口内 3 次失败 → 首次封禁 5 分钟
@@ -91,11 +92,12 @@ export async function POST(req) {
     try {
       ensureDb();
     } catch (dbErr) {
-      console.error("[auth/login] db init error:", dbErr);
+      const { message } = normalizeError(dbErr);
+      console.error("[auth/login] db init error:", message, dbErr);
       return NextResponse.json(
         {
-          error: "数据库初始化失败：" + (dbErr?.message || "未知错误"),
-          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+          error: "数据库初始化失败：" + message,
+          debug: IS_DEV ? message : undefined,
         },
         { status: 500 }
       );
@@ -187,13 +189,6 @@ export async function POST(req) {
       user: { id: user.id, username: user.username },
     });
   } catch (err) {
-    console.error("[auth/login] error:", err);
-    return NextResponse.json(
-      {
-        error: "服务器错误",
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "auth/login" });
   }
 }

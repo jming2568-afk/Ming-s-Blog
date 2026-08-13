@@ -6,6 +6,7 @@ import {
   updateSiteSettings,
 } from "@/lib/settings";
 import { ensureDb } from "@/lib/db";
+import { json500, normalizeError } from "@/lib/routeHelpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,11 +20,12 @@ export async function GET() {
     try {
       ensureDb();
     } catch (dbErr) {
-      console.error("[api/settings GET] db init error:", dbErr);
+      const { message } = normalizeError(dbErr);
+      console.error("[api/settings GET] db init error:", message, dbErr);
       return NextResponse.json(
         {
-          error: "数据库初始化失败",
-          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+          error: "数据库初始化失败：" + message,
+          debug: IS_DEV ? message : undefined,
         },
         { status: 500 }
       );
@@ -32,14 +34,7 @@ export async function GET() {
     const resume = getResumeData();
     return NextResponse.json({ ok: true, settings, resume });
   } catch (err) {
-    console.error("[api/settings GET] error:", err);
-    return NextResponse.json(
-      {
-        error: "读取失败",
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/settings GET" });
   }
 }
 
@@ -72,13 +67,6 @@ export async function PUT(req) {
     const settings = updateSiteSettings(patch);
     return NextResponse.json({ ok: true, settings });
   } catch (err) {
-    console.error("[api/settings PUT] error:", err);
-    return NextResponse.json(
-      {
-        error: "保存失败：" + (err?.message || "服务器错误"),
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/settings PUT" });
   }
 }

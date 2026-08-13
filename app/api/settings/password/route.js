@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import getDb, { ensureDb } from "@/lib/db";
 import { getCurrentUser, verifyPassword, hashPassword } from "@/lib/auth";
+import { json500, normalizeError } from "@/lib/routeHelpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +16,12 @@ export async function PUT(req) {
     try {
       ensureDb();
     } catch (dbErr) {
-      console.error("[api/settings/password] db init error:", dbErr);
+      const { message } = normalizeError(dbErr);
+      console.error("[api/settings/password] db init error:", message, dbErr);
       return NextResponse.json(
         {
-          error: "数据库初始化失败",
-          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+          error: "数据库初始化失败：" + message,
+          debug: IS_DEV ? message : undefined,
         },
         { status: 500 }
       );
@@ -52,13 +54,6 @@ export async function PUT(req) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[api/settings/password PUT] error:", err);
-    return NextResponse.json(
-      {
-        error: "修改失败：" + (err?.message || "服务器错误"),
-        debug: IS_DEV ? (err?.message || String(err)) : undefined,
-      },
-      { status: 500 }
-    );
+    return json500(err, { routeName: "api/settings/password PUT" });
   }
 }
