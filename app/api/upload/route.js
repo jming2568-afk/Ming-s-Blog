@@ -3,6 +3,7 @@ import path from "node:path";
 import { put } from "@vercel/blob";
 import { getCurrentUser } from "@/lib/auth";
 import { json500 } from "@/lib/routeHelpers";
+import { decorateBlobError } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,10 +68,15 @@ export async function POST(req) {
     const buffer = Buffer.from(arrayBuffer);
 
     // 写入 Vercel Blob，返回公网直链
-    const blob = await put(name, buffer, {
-      access: "public",
-      contentType: mime,
-    });
+    let blob;
+    try {
+      blob = await put(name, buffer, {
+        access: "public",
+        contentType: mime,
+      });
+    } catch (err) {
+      throw decorateBlobError(err);
+    }
 
     return NextResponse.json({
       ok: true,
