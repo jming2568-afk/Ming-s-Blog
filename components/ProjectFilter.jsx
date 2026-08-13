@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { projects, projectCategories } from "@/data/projects";
 import ProjectCard from "@/components/ProjectCard";
 import { cn } from "@/lib/utils";
 
-export default function ProjectFilter() {
+export default function ProjectFilter({ projects, projectCategories }) {
   const [active, setActive] = useState("all");
 
   const filtered =

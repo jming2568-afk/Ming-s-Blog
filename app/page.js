@@ -3,16 +3,20 @@ import SectionTitle from "@/components/SectionTitle";
 import ProjectCard from "@/components/ProjectCard";
 import SkillBar from "@/components/SkillBar";
 import Timeline from "@/components/Timeline";
-import { projects } from "@/data/projects";
+import { getContent } from "@/lib/content";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const content = await getContent();
+  const { profile, projects, skills, timeline } = content;
   const featured = projects.filter((p) => p.featured);
 
   return (
     <>
-      <HeroSection />
+      <HeroSection profile={profile} />
 
       {/* 精选作品 */}
       <section className="max-w-6xl mx-auto px-4 py-20">
@@ -48,14 +52,14 @@ export default function Home() {
             subtitle="前端 / 后端 / 部署运维 / AIGC / AI 工程实践"
             center
           />
-          <SkillBar />
+          <SkillBar skills={skills} />
         </div>
       </section>
 
       {/* 经历时间线 */}
       <section className="max-w-3xl mx-auto px-4 py-20">
         <SectionTitle title="经历时间线" subtitle="从电子商务到军旅，再到 AIGC 与全栈开发" center />
-        <Timeline />
+        <Timeline timeline={timeline} />
       </section>
 
       {/* CTA */}

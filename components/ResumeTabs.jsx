@@ -3,18 +3,17 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPrinter, FiBriefcase, FiAward, FiBookOpen, FiCode, FiZap } from "react-icons/fi";
-import { resumeVersions } from "@/data/resume";
 import { cn } from "@/lib/utils";
 
-export default function ResumeTabs() {
+export default function ResumeTabs({ resume }) {
   const [active, setActive] = useState("aigc");
-  const data = resumeVersions[active];
+  const data = resume[active];
 
   return (
     <div>
       {/* 版本切换 */}
       <div className="flex flex-wrap gap-2 mb-8">
-        {Object.values(resumeVersions).map((v) => (
+        {Object.values(resume).map((v) => (
           <button
             key={v.id}
             onClick={() => setActive(v.id)}

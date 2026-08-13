@@ -62,9 +62,28 @@ npm run dev
 ## 部署
 
 - **Vercel**（推荐）：连接 GitHub 仓库自动部署
-- **静态导出**：在 `next.config.mjs` 添加 `output: 'export'`，`npm run build` 后部署到任意静态托管
+- **静态导出**：在 `next.config.mjs` 添加 `output: 'export'`，`npm run build` 后部署到任意静态托管（注意：导出模式不支持管理后台/上传，仅适合纯静态展示）
 
-## 说明
+## 内容管理后台
+
+访问 `/admin` 可在线编辑网站全部展示内容（个人信息、作品集、技能、经历、双版简历），保存后公开页面即时生效，**无需重新部署**：
+
+- **内容存储**：Vercel Blob（`content.json` + 上传的图片/视频）
+- **默认内容**：`data/*.js` 是种子数据；后台保存的内容会覆盖默认值，两者按 key 合并
+- **上传媒体**：后台"上传图片/视频"会返回可用的公网 URL，填入内容 JSON 对应字段即可
+- **本地开发**：未配置 `BLOB_READ_WRITE_TOKEN` 时，内容降级写入 `data/content.local.json`（已 gitignore），编辑流程照常可用，但上传功能需要真实 token
+
+### Vercel 环境变量（Settings → Environment Variables，全部必配）
+
+| 变量 | 说明 | 示例 |
+|---|---|---|
+| `AUTH_SECRET` | 管理后台 session 签名密钥（生产必填，缺失会报错） | `openssl rand -hex 32` 生成 |
+| `ADMIN_PASSWORD` | 管理后台登录密码（生产必填，缺失会报错） | 一个强密码 |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob 读写凭证（Storage → Blob 创建后复制） | `vercel_blob_rw_...` |
+
+配置后重新部署即可；那个 `[auth] 生产环境必须显式设置 AUTH_SECRET` 的报错，就是因为 `AUTH_SECRET` 没配到 Vercel 环境变量里。
+
+### 说明
 
 - 联系方式仅公开邮箱与 GitHub，手机号/微信号在投递时单独提供以保护隐私
 - 作品素材版权归原公司所有，网站仅展示项目名称与文字描述

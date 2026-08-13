@@ -1,6 +1,4 @@
-import { skills } from "@/data/skills";
-
-export default function SkillBar() {
+export default function SkillBar({ skills }) {
   return (
     <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
       {skills.map((group) => (

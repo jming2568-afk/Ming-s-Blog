@@ -1,6 +1,4 @@
-import { timeline } from "@/data/timeline";
-
-export default function Timeline() {
+export default function Timeline({ timeline }) {
   return (
     <div className="relative">
       {/* 竖线 */}

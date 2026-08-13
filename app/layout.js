@@ -1,6 +1,7 @@
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import { getContent } from "@/lib/content";
 
 export const metadata = {
   title: "李佳铭 | AIGC 漫剧制片 / 全栈开发工程师",
@@ -9,13 +10,14 @@ export const metadata = {
   keywords: ["李佳铭", "AIGC", "漫剧", "全栈开发", "Next.js", "作品集", "简历"],
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const content = await getContent();
   return (
     <html lang="zh-CN">
       <body className="min-h-screen flex flex-col">
         <NavBar />
         <main className="flex-1 pt-16">{children}</main>
-        <Footer />
+        <Footer profile={content.profile} />
       </body>
     </html>
   );

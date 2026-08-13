@@ -29,6 +29,11 @@ yarn-error.log*
 .env*.local
 .env
 
+# local content edits (admin 在本地开发时写入的覆盖内容)
+data/content.local.json
+node_modules/.npm-cache/
+npm-install.log
+
 # vercel
 .vercel
 

@@ -3,9 +3,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FiArrowRight, FiDownload } from "react-icons/fi";
-import { profile } from "@/data/profile";
 
-export default function HeroSection() {
+export default function HeroSection({ profile }) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50/40 to-pink-50/30">
       {/* 装饰背景 */}

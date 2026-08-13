@@ -1,12 +1,17 @@
 import { FiMail, FiGithub, FiMapPin } from "react-icons/fi";
-import { profile } from "@/data/profile";
+import { getContent } from "@/lib/content";
 
 export const metadata = {
   title: "联系 | 李佳铭",
   description: "联系李佳铭 — 邮箱与 GitHub",
 };
 
-export default function ContactPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ContactPage() {
+  const content = await getContent();
+  const { profile } = content;
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
       <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">联系我</h1>
