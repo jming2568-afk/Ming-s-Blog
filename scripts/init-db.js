@@ -61,15 +61,32 @@ db.exec(`
 `);
 console.log("✅ Tables ready.");
 
-// Seed default admin user（注意：初始账号已统一为 useradmin/useradmin123，不再创建旧 admin）
+// Seed default admin user（支持从环境变量 INIT_ADMIN_USERNAME / INIT_ADMIN_PASSWORD 覆盖；留空回退到 useradmin/useradmin123）
+const DEFAULT_INIT_USERNAME = "useradmin";
+const DEFAULT_INIT_PASSWORD = "useradmin123";
+const initUsername =
+  (process.env.INIT_ADMIN_USERNAME || "").trim() || DEFAULT_INIT_USERNAME;
+const initPassword =
+  (process.env.INIT_ADMIN_PASSWORD || "").trim() || DEFAULT_INIT_PASSWORD;
+
 const userCount = db.prepare("SELECT COUNT(*) AS c FROM users").get().c;
 if (userCount === 0) {
-  const hash = bcrypt.hashSync("useradmin123", 10);
+  if (initPassword.length < 6 || initPassword.length > 72) {
+    console.error(
+      `❌ INIT_ADMIN_PASSWORD 长度必须在 6-72 位之间（当前 ${initPassword.length} 位），初始化已终止。`
+    );
+    process.exit(1);
+  }
+  const hash = bcrypt.hashSync(initPassword, 10);
   db.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)").run(
-    "useradmin",
+    initUsername,
     hash
   );
-  console.log("👤 Created default admin user: useradmin / useradmin123");
+  console.log(
+    `👤 Created default admin user: ${initUsername} / ${
+      process.env.INIT_ADMIN_PASSWORD ? "***(来自 INIT_ADMIN_PASSWORD)***" : initPassword
+    }`
+  );
 } else {
   // 迁移：如果旧环境里存在 admin/admin123，保留 useradmin；也不再额外插 admin。
   console.log(`👤 Users table has ${userCount} user(s), skipping admin seed.`);
