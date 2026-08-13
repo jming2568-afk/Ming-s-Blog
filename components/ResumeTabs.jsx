@@ -16,7 +16,7 @@ import {
 
 const TAB_COLORS = {
   aigc: "mem-red",
-  fullstack: "mem-blue",
+  dev: "mem-blue",
 };
 
 const TAB_PALETTE = {
@@ -29,7 +29,7 @@ const TAB_PALETTE = {
     marker: "marker-yellow",
     tagColor: "red",
   },
-  fullstack: {
+  dev: {
     header: "bg-mem-blue text-white",
     headerAlt: "bg-mem-green text-mem-black",
     accent: "mem-blue",
