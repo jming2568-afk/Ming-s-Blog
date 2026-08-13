@@ -11,14 +11,14 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
-const DB_PATH = path.join(ROOT, "data", "portfolio.db");
-const UPLOADS_DIR = path.join(ROOT, "public", "uploads");
+const DB_PATH = process.env.DB_PATH || path.join(ROOT, "data", "portfolio.db");
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(ROOT, "public", "uploads");
 
 if (!fs.existsSync(path.dirname(DB_PATH))) {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 }
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
 // Read default projects (esm import with JSON hack via dynamic import of .js file)

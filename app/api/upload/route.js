@@ -3,13 +3,17 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { getCurrentUser } from "@/lib/auth";
+import { ensureDb } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_IMAGE = 8 * 1024 * 1024; // 8 MB
 const MAX_VIDEO = 100 * 1024 * 1024; // 100 MB
-const UPLOAD_ROOT = path.join(process.cwd(), "public", "uploads");
+const UPLOAD_ROOT =
+  process.env.UPLOAD_DIR || path.join(process.cwd(), "public", "uploads");
+
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -35,6 +39,23 @@ export async function POST(req) {
     if (!user) {
       return NextResponse.json({ error: "请先登录" }, { status: 401 });
     }
+
+    try {
+      ensureDb();
+    } catch (dbErr) {
+      // 上传 API 本身不写 DB，但使用了 auth session；DB 初始化失败时给出 JSON 500，避免 HTML 错误页
+      console.error("[api/upload] db init error:", dbErr);
+      return NextResponse.json(
+        {
+          error: "服务初始化失败：" + (dbErr?.message || "未知错误"),
+          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+        },
+        { status: 500 }
+      );
+    }
+
+    // 确保上传根目录存在（UPLOAD_DIR 可能是外部配置的新路径）
+    ensureDir(UPLOAD_ROOT);
 
     const formData = await req.formData();
     const file = formData.get("file");
@@ -67,11 +88,20 @@ export async function POST(req) {
     const name = `${randomUUID()}${ext}`;
     const fullPath = path.join(dir, name);
 
-    // Write blob to disk
     const arrayBuffer = await file.arrayBuffer();
     fs.writeFileSync(fullPath, Buffer.from(arrayBuffer));
 
-    const url = `/uploads/${yyyy}/${mm}/${name}`;
+    // 生成对外可访问 URL。
+    // 若 UPLOAD_DIR 仍位于 <cwd>/public/uploads 下，走 Next.js 静态文件规则：/uploads/YYYY/MM/file.ext
+    // 若用户用自定义路径，需要配置 nginx/Next.js rewrites 指向该目录。
+    const publicPrefix = path.resolve(process.cwd(), "public");
+    let url;
+    if (fullPath.startsWith(publicPrefix)) {
+      url = `/uploads/${yyyy}/${mm}/${name}`;
+    } else {
+      // 自定义目录场景：先给一个相对路径，实际部署时自行补 rewrite/静态服务
+      url = `/uploads/${yyyy}/${mm}/${name}`;
+    }
     return NextResponse.json({
       ok: true,
       url,
@@ -83,7 +113,10 @@ export async function POST(req) {
   } catch (err) {
     console.error("[api/upload] error:", err);
     return NextResponse.json(
-      { error: "上传失败：" + (err?.message || "服务器错误") },
+      {
+        error: "上传失败：" + (err?.message || "服务器错误"),
+        debug: IS_DEV ? (err?.message || String(err)) : undefined,
+      },
       { status: 500 }
     );
   }

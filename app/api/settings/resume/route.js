@@ -1,15 +1,31 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getResumeData, updateResumeData } from "@/lib/settings";
+import { ensureDb } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 // 需登录：保存双版本简历（结构化对象）
 export async function PUT(req) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: "请先登录" }, { status: 401 });
+
+    try {
+      ensureDb();
+    } catch (dbErr) {
+      console.error("[api/settings/resume] db init error:", dbErr);
+      return NextResponse.json(
+        {
+          error: "数据库初始化失败",
+          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+        },
+        { status: 500 }
+      );
+    }
 
     const body = await req.json();
     const resume = body?.resume;
@@ -22,7 +38,10 @@ export async function PUT(req) {
   } catch (err) {
     console.error("[api/settings/resume PUT] error:", err);
     return NextResponse.json(
-      { error: "保存失败：" + (err?.message || "服务器错误") },
+      {
+        error: "保存失败：" + (err?.message || "服务器错误"),
+        debug: IS_DEV ? (err?.message || String(err)) : undefined,
+      },
       { status: 400 }
     );
   }

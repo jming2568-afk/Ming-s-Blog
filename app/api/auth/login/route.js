@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import db, { ensureTables, ensureDefaultUsers } from "@/lib/db";
+import getDb, { ensureDb } from "@/lib/db";
 import { verifyPassword, createSession } from "@/lib/auth";
-
-ensureTables();
-ensureDefaultUsers();
 
 // ========== 登录失败惩罚配置 ==========
 // 5 分钟滑动窗口内 3 次失败 → 首次封禁 5 分钟
@@ -33,11 +30,10 @@ function formatSec(total) {
   return parts.join("") || "1 分";
 }
 
-function getBanState(username) {
+function getBanState(db, username) {
   const now = Math.floor(Date.now() / 1000);
   const windowStart = now - FAIL_WINDOW_SEC;
 
-  // 1. 先算过去窗口内失败次数
   const row = db
     .prepare(
       `SELECT COUNT(*) AS c FROM login_failures WHERE username = ? AND failed_at >= ?`
@@ -45,9 +41,6 @@ function getBanState(username) {
     .get(username, windowStart);
   const countInWindow = row?.c || 0;
 
-  // 2. 算历史累计封禁等级（> 窗口外的也计入，惩罚翻倍是长期记忆）
-  // 封禁等级 = floor(最近 7 天内达到阈值的次数)，用 最近 N 次失败 倒推
-  // 简化：统计 7 天内失败总次数 / 阈值，得到已翻倍层数
   const SEVEN_DAYS = 7 * 24 * 3600;
   const totalIn7d = db
     .prepare(
@@ -55,15 +48,12 @@ function getBanState(username) {
     )
     .get(username, now - SEVEN_DAYS)?.c || 0;
   const banLevel = Math.max(0, Math.floor(totalIn7d / FAIL_THRESHOLD) - 1);
-  // 注意：若当前窗口内还没到阈值，不应该封禁（用户可能刚超过 7 天记忆的次数但当前窗口还没 3 次）
   if (countInWindow < FAIL_THRESHOLD) {
     return { banned: false, countInWindow, banLevel };
   }
 
-  // 当前封禁时长： BASE * 2^banLevel，不超过 MAX
   const currentBanSec = Math.min(MAX_BAN_SEC, BASE_BAN_SEC * Math.pow(2, banLevel));
 
-  // 最近一次失败时间
   const last = db
     .prepare(
       `SELECT MAX(failed_at) AS t FROM login_failures WHERE username = ? AND failed_at >= ?`
@@ -83,18 +73,35 @@ function getBanState(username) {
   };
 }
 
-function recordFailure(username, ip) {
+function recordFailure(db, username, ip) {
   db.prepare(
     `INSERT INTO login_failures (username, ip, failed_at) VALUES (?, ?, ?)`
   ).run(username, ip, Math.floor(Date.now() / 1000));
 }
 
-function clearFailures(username) {
+function clearFailures(db, username) {
   db.prepare(`DELETE FROM login_failures WHERE username = ?`).run(username);
 }
 
+const IS_DEV = process.env.NODE_ENV !== "production";
+
 export async function POST(req) {
   try {
+    // 关键：把 DB 初始化从模块顶层移到 handler 内部，用 try/catch 包起来返回 JSON 500
+    try {
+      ensureDb();
+    } catch (dbErr) {
+      console.error("[auth/login] db init error:", dbErr);
+      return NextResponse.json(
+        {
+          error: "数据库初始化失败：" + (dbErr?.message || "未知错误"),
+          debug: IS_DEV ? (dbErr?.message || String(dbErr)) : undefined,
+        },
+        { status: 500 }
+      );
+    }
+    const db = getDb();
+
     const body = await req.json();
     const { username, password } = body || {};
     const ip = await clientIp();
@@ -106,10 +113,8 @@ export async function POST(req) {
       );
     }
 
-    // 先查封禁（即使账号不存在，对同一个 username 也限流，避免枚举）
-    const ban = getBanState(username);
+    const ban = getBanState(db, username);
     if (ban.banned) {
-      // 封禁中：不再记录失败，避免每轮请求都再次延迟解禁
       return NextResponse.json(
         {
           error: `登录失败次数过多，已临时封禁，请 ${ban.remainText} 后再试。`,
@@ -125,8 +130,8 @@ export async function POST(req) {
       .get(username);
 
     if (!user) {
-      recordFailure(username, ip);
-      const after = getBanState(username);
+      recordFailure(db, username, ip);
+      const after = getBanState(db, username);
       if (after.banned) {
         return NextResponse.json(
           {
@@ -149,8 +154,8 @@ export async function POST(req) {
 
     const ok = await verifyPassword(password, user.password_hash);
     if (!ok) {
-      recordFailure(username, ip);
-      const after = getBanState(username);
+      recordFailure(db, username, ip);
+      const after = getBanState(db, username);
       if (after.banned) {
         return NextResponse.json(
           {
@@ -171,8 +176,7 @@ export async function POST(req) {
       );
     }
 
-    // 成功登录 → 清理失败记录
-    clearFailures(username);
+    clearFailures(db, username);
 
     const { cookieOptions } = await createSession(user.id);
     const cookieStore = await cookies();
@@ -184,6 +188,12 @@ export async function POST(req) {
     });
   } catch (err) {
     console.error("[auth/login] error:", err);
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "服务器错误",
+        debug: IS_DEV ? (err?.message || String(err)) : undefined,
+      },
+      { status: 500 }
+    );
   }
 }

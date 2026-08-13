@@ -129,6 +129,9 @@ export function DecorTriangle({ className, color = "mem-green", rotate = 0 }) {
 
 /* Scattered corner decorator - drop into any section to add Memphis spice.
    Seed-based pseudo-random so layout is stable. */
+// 统一数值格式化：所有浮点数经 fmt() 输出 4 位小数，保证 SSR 与客户端逐字节一致，消除 hydration mismatch
+const fmt = (n) => Number(n.toFixed(4));
+
 export default function MemphisDecor({
   className,
   seed = 1,
@@ -144,10 +147,10 @@ export default function MemphisDecor({
     const variant = Math.floor(r(1) * 6); // 0..5
     const colors = ["mem-red", "mem-blue", "mem-green", "mem-orange", "mem-purple", "mem-yellow"];
     const color = colors[Math.floor(r(2) * colors.length)];
-    const top = r(3) * 80 + 5; // 5% - 85%
-    const right = r(4) * 90 + 2;
-    const size = 12 + r(5) * 28; // 12 - 40px
-    const rot = r(6) * 360;
+    const top = fmt(r(3) * 80 + 5); // 5% - 85%
+    const right = fmt(r(4) * 90 + 2);
+    const size = fmt(12 + r(5) * 28); // 12 - 40px
+    const rot = fmt(r(6) * 360);
 
     let node = null;
     const baseCls = "absolute pointer-events-none";
