@@ -1,5 +1,5 @@
 import { FiMail, FiGithub } from "react-icons/fi";
-import { profile } from "@/data/profile";
+import { getSiteSettings } from "@/lib/settings";
 import {
   DecorDots,
   DecorSolidCircle,
@@ -8,6 +8,12 @@ import {
 } from "@/components/MemphisDecor";
 
 export default function Footer() {
+  const settings = getSiteSettings();
+  const name = settings.displayName || "李佳铭";
+  const bioShort = settings.bioShort || "";
+  const titles = settings.titles || [];
+  const email = settings.email || "";
+  const githubUrl = settings.githubUrl || "";
   return (
     <footer className="relative mt-10 bg-cream-pink border-t-[3px] border-mem-black overflow-hidden">
       {/* Corner decor */}
@@ -36,14 +42,14 @@ export default function Footer() {
           <div className="flex items-center gap-2 mb-3">
             <DecorSolidSquare className="w-5 h-5 border-memphis" color="mem-red" />
             <p className="font-display text-2xl tracking-tighter text-mem-black">
-              {profile.name}
+              {name}
             </p>
           </div>
           <p className="font-body text-sm text-mem-black/70 max-w-md leading-relaxed mb-5">
-            {profile.bioShort}
+            {bioShort}
           </p>
           <p className="font-body text-xs text-mem-black/50">
-            © {new Date().getFullYear()} {profile.name} · {profile.titles.join(" / ")}
+            © {new Date().getFullYear()} {name} · {titles.join(" / ")}
             <span className="ml-2 marker-yellow">Made with Memphis ❤</span>
           </p>
         </div>
@@ -54,13 +60,13 @@ export default function Footer() {
             联系我
           </p>
           <a
-            href={`mailto:${profile.email}`}
+            href={`mailto:${email}`}
             className="flex items-center gap-2 px-3 py-2.5 bg-white border-memphis shadow-memphis-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-mem-yellow transition-all font-body text-sm w-fit"
           >
-            <FiMail className="shrink-0 text-mem-red" /> {profile.email}
+            <FiMail className="shrink-0 text-mem-red" /> {email}
           </a>
           <a
-            href={profile.githubUrl}
+            href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2.5 bg-mem-black text-white border-memphis shadow-memphis-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all font-body text-sm w-fit"

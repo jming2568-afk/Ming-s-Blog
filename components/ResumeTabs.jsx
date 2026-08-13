@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiPrinter, FiBriefcase, FiAward, FiBookOpen, FiCode, FiZap, FiStar } from "react-icons/fi";
+import { FiPrinter, FiBriefcase, FiAward, FiBookOpen, FiCode, FiZap, FiStar, FiEdit2 } from "react-icons/fi";
 import { resumeVersions } from "@/data/resume";
+import { fetchSettings } from "@/lib/settingsStore";
+import { useAuth } from "@/components/AuthContext";
 import { cn } from "@/lib/utils";
 import UiButton from "@/components/UiButton";
 import UiTag from "@/components/UiTag";
@@ -41,8 +44,28 @@ const TAB_PALETTE = {
 };
 
 export default function ResumeTabs() {
+  const router = useRouter();
+  const { isLoggedIn, isLoading } = useAuth();
   const [active, setActive] = useState("aigc");
-  const data = resumeVersions[active];
+  const [resume, setResume] = useState(resumeVersions);
+  const [certPhotoUrl, setCertPhotoUrl] = useState("");
+
+  // 拉取站点设置中的简历 + 证件照（DB 有值则覆盖默认）
+  useEffect(() => {
+    (async () => {
+      try {
+        const { settings, resume: apiResume } = await fetchSettings({ force: true });
+        if (apiResume && apiResume.aigc && apiResume.dev) {
+          setResume(apiResume);
+        }
+        if (settings?.certPhotoUrl) setCertPhotoUrl(settings.certPhotoUrl);
+      } catch {
+        /* 保持默认 */
+      }
+    })();
+  }, []);
+
+  const data = resume[active];
   const palette = TAB_PALETTE[active] || TAB_PALETTE.aigc;
 
   return (
@@ -87,6 +110,17 @@ export default function ResumeTabs() {
           );
         })}
 
+        {!isLoading && isLoggedIn && (
+          <UiButton
+            variant="outline"
+            color="black"
+            className="no-print"
+            onClick={() => router.push("/settings?tab=resume")}
+          >
+            <FiEdit2 className="-mt-0.5" /> 编 辑
+          </UiButton>
+        )}
+
         <UiButton
           variant="outline"
           color="black"
@@ -108,18 +142,34 @@ export default function ResumeTabs() {
           {/* 求职意向 Header */}
           <div className="relative mb-8 border-memphis-thick shadow-memphis overflow-hidden">
             <div className={cn("px-6 py-5 relative", palette.header)}>
+              {/* 证件照区域（右上角，约两寸方框） */}
+              <div className="hidden sm:block absolute top-4 right-4 w-[120px] h-[120px] z-10">
+                {certPhotoUrl ? (
+                  <img
+                    src={certPhotoUrl}
+                    alt="证件照"
+                    className="w-full h-full object-cover bg-white border-memphis-thick shadow-memphis"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white/25 border-[3px] border-dashed border-white/80 flex items-center justify-center">
+                    <span className="font-display text-xs tracking-widest text-white">
+                      证件照
+                    </span>
+                  </div>
+                )}
+              </div>
               <DecorSolidCircle
-                className="absolute top-2 right-6 w-5 h-5 opacity-80"
+                className="absolute top-2 right-40 w-5 h-5 opacity-80"
                 color="mem-yellow"
               />
               <DecorOutlineCircle
-                className="absolute bottom-2 right-16 w-8 h-8 opacity-50"
+                className="absolute bottom-2 right-44 w-8 h-8 opacity-50"
                 color="white"
               />
-              <p className="text-xs font-display tracking-widest uppercase opacity-80 mb-1">
+              <p className="text-xs font-display tracking-widest uppercase opacity-80 mb-1 pr-24 sm:pr-40">
                 求职意向 / Target Role
               </p>
-              <h2 className="font-display tracking-tighter text-2xl sm:text-3xl">
+              <h2 className="font-display tracking-tighter text-2xl sm:text-3xl pr-24 sm:pr-40">
                 {data.title}
               </h2>
             </div>

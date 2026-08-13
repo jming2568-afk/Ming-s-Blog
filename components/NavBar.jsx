@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiMenu, FiX, FiLogOut, FiSettings, FiGithub } from "react-icons/fi";
+import { FiMenu, FiX, FiLogOut, FiSettings, FiGithub, FiUser } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 import UiButton from "@/components/UiButton";
 import LoginModal from "@/components/LoginModal";
@@ -29,7 +29,26 @@ export default function NavBar() {
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
+  const [site, setSite] = useState({ displayName: "李佳铭", avatarUrl: "" });
   const menuRef = useRef(null);
+
+  // 拉取站点设置（展示名称/头像，全站同步）
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/settings", { cache: "no-store" });
+        const data = await res.json();
+        if (data?.settings) {
+          setSite({
+            displayName: data.settings.displayName || "李佳铭",
+            avatarUrl: data.settings.avatarUrl || "",
+          });
+        }
+      } catch {
+        /* 保持默认 */
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -75,7 +94,7 @@ export default function NavBar() {
               />
             </span>
             <span className="font-display text-2xl sm:text-3xl tracking-tighter text-mem-black">
-              李佳铭
+              {site.displayName}
               <span className="marker-yellow ml-1">SubMing.Top</span>
             </span>
           </Link>
@@ -135,10 +154,18 @@ export default function NavBar() {
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setUserMenu((v) => !v)}
-                    className="flex items-center gap-2 w-12 h-12 bg-mem-purple text-white font-display text-lg border-memphis shadow-memphis-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                    className="flex items-center justify-center w-12 h-12 bg-mem-purple text-white font-display text-lg border-memphis shadow-memphis-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all overflow-hidden"
                     aria-label="用户菜单"
                   >
-                    <span className="mx-auto">{avatarLetter}</span>
+                    {site.avatarUrl ? (
+                      <img
+                        src={site.avatarUrl}
+                        alt="头像"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="mx-auto">{avatarLetter}</span>
+                    )}
                   </button>
                   <AnimatePresence>
                     {userMenu && (
@@ -156,6 +183,15 @@ export default function NavBar() {
                           </p>
                         </div>
                         <div className="p-1.5 flex flex-col gap-1">
+                          <button
+                            onClick={() => {
+                              setUserMenu(false);
+                              router.push("/settings");
+                            }}
+                            className="w-full text-left flex items-center gap-2 px-3 py-2 font-display tracking-tight hover:bg-mem-yellow hover:text-mem-black transition-colors"
+                          >
+                            <FiUser /> 个人中心
+                          </button>
                           <button
                             onClick={() => {
                               setUserMenu(false);

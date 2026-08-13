@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FiArrowRight, FiDownload } from "react-icons/fi";
 import { profile } from "@/data/profile";
+import { fetchSettings } from "@/lib/settingsStore";
 import UiButton from "@/components/UiButton";
 import UiTag from "@/components/UiTag";
 import MemphisDecor, {
@@ -22,6 +24,25 @@ const titleColors = [
 ];
 
 export default function HeroSection() {
+  const [data, setData] = useState(profile);
+
+  // 全站同步：用站点设置覆盖展示名称/头衔/简介
+  useEffect(() => {
+    (async () => {
+      try {
+        const { settings } = await fetchSettings();
+        setData((prev) => ({
+          ...prev,
+          name: settings.displayName || prev.name,
+          titles: settings.titles?.length ? settings.titles : prev.titles,
+          bioShort: settings.bioShort || prev.bioShort,
+        }));
+      } catch {
+        /* 保持默认 */
+      }
+    })();
+  }, []);
+
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-cream">
       {/* Grid pattern background */}
@@ -91,7 +112,7 @@ export default function HeroSection() {
               className="font-display tracking-tighter leading-[0.95] text-5xl sm:text-7xl lg:text-[6.5rem] text-mem-black mb-6"
             >
               <span className="block">
-                {profile.name.split("").map((ch, i) => {
+                {data.name.split("").map((ch, i) => {
                   const palette = ["text-mem-red", "text-mem-blue", "text-mem-black", "text-mem-purple"];
                   return (
                     <motion.span
@@ -130,7 +151,7 @@ export default function HeroSection() {
               transition={{ delay: 0.6, type: "spring", stiffness: 180 }}
               className="flex flex-wrap items-center gap-2 sm:gap-3 mb-8"
             >
-              {profile.titles.map((t, i) => (
+              {data.titles.map((t, i) => (
                 <UiTag
                   key={t}
                   color={["red", "blue", "green", "orange"][i % 4]}
@@ -148,7 +169,7 @@ export default function HeroSection() {
               className="text-base sm:text-lg font-body text-mem-black/80 max-w-2xl mb-10 leading-relaxed"
             >
               {(() => {
-                const parts = profile.bioShort.split(/(AIGC 漫剧一线生产与管理经验|企业级 AIGC 平台独立开发经验|既懂内容生产现场，也懂工具与效率)/);
+                const parts = data.bioShort.split(/(AIGC 漫剧一线生产与管理经验|企业级 AIGC 平台独立开发经验|既懂内容生产现场，也懂工具与效率)/);
                 return parts.map((p, i) => {
                   if (p.includes("AIGC") || p.includes("企业级") || p.includes("既懂")) {
                     return (
