@@ -118,14 +118,20 @@ export default function ProfileSettings() {
 
       {/* 展示媒体上传 */}
       <div className="p-6 bg-white border-memphis shadow-memphis">
-        <h4 className="font-display tracking-tight text-mem-black text-lg mb-4 flex items-center gap-2">
+        <h4 className="font-display tracking-tight text-mem-black text-lg mb-1 flex items-center gap-2">
           🖼 展示媒体
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div>
-            <label className="block text-sm font-bold font-display tracking-tight text-mem-black mb-2">
+        <p className="text-xs font-body text-mem-black/50 mb-4">
+          选择图片后可先预览再上传；点击预览图可直接更换。
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div className="min-w-0">
+            <label className="block text-sm font-bold font-display tracking-tight text-mem-black mb-1">
               个人头像
             </label>
+            <p className="text-[11px] font-body text-mem-black/45 mb-2">
+              显示在导航栏与作品集管理员模式
+            </p>
             <MediaUploader
               key={`avatar-${avatarUrl}`}
               accept="image/*"
@@ -133,10 +139,13 @@ export default function ProfileSettings() {
               onUploaded={({ url }) => setAvatarUrl(url)}
             />
           </div>
-          <div>
-            <label className="block text-sm font-bold font-display tracking-tight text-mem-black mb-2">
+          <div className="min-w-0">
+            <label className="block text-sm font-bold font-display tracking-tight text-mem-black mb-1">
               简历证件照
             </label>
+            <p className="text-[11px] font-body text-mem-black/45 mb-2">
+              显示在简历右上角（约两寸方框）
+            </p>
             <MediaUploader
               key={`cert-${certPhotoUrl}`}
               accept="image/*"
@@ -144,10 +153,13 @@ export default function ProfileSettings() {
               onUploaded={({ url }) => setCertPhotoUrl(url)}
             />
           </div>
-          <div>
-            <label className="block text-sm font-bold font-display tracking-tight text-mem-black mb-2">
+          <div className="min-w-0">
+            <label className="block text-sm font-bold font-display tracking-tight text-mem-black mb-1">
               微信二维码
             </label>
+            <p className="text-[11px] font-body text-mem-black/45 mb-2">
+              显示在联系页底部二维码区
+            </p>
             <MediaUploader
               key={`qr-${wechatQrUrl}`}
               accept="image/*"
@@ -156,9 +168,6 @@ export default function ProfileSettings() {
             />
           </div>
         </div>
-        <p className="mt-3 text-xs font-body text-mem-black/50">
-          头像显示在导航栏与作品集管理员模式；证件照显示在简历右上角（约两寸方框）；微信二维码显示在联系页底部。
-        </p>
       </div>
 
       {/* 基本信息 */}

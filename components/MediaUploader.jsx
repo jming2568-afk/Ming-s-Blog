@@ -124,6 +124,15 @@ export default function MediaUploader({
 
   return (
     <div className="w-full space-y-3">
+      {/* 共用文件选择（空态/预览态均可触发） */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+
       {!hasPreview ? (
         <div
           onDragEnter={(e) => {
@@ -171,44 +180,50 @@ export default function MediaUploader({
               </span>
             </div>
           </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={accept}
-            className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
-          />
         </div>
       ) : (
-        <div className="relative bg-white border-memphis shadow-memphis-sm overflow-hidden">
+        <div className="relative bg-white border-memphis shadow-memphis-sm overflow-hidden isolate">
           <button
             type="button"
             onClick={clear}
-            className="absolute top-2 right-2 z-10 w-9 h-9 bg-mem-red text-white border-memphis shadow-memphis-sm flex items-center justify-center hover:bg-white hover:text-mem-red transition-colors"
+            className="absolute top-2 right-2 z-20 w-9 h-9 bg-mem-red text-white border-memphis shadow-memphis-sm flex items-center justify-center hover:bg-white hover:text-mem-red transition-colors"
             aria-label="移除"
           >
             <FiX size={18} />
           </button>
 
-          <div className="w-full aspect-video bg-mem-grid">
+          {/* 固定高度预览：无论图片原始比例，绝不溢出覆盖下方按钮；图片可点击更换 */}
+          <div
+            onClick={previewType === "image" ? () => inputRef.current?.click() : undefined}
+            title={previewType === "image" ? "点击更换图片" : undefined}
+            className={cn(
+              "relative w-full h-44 sm:h-52 overflow-hidden bg-mem-grid flex items-center justify-center",
+              previewType === "image" && "cursor-pointer group"
+            )}
+          >
             {previewType === "video" ? (
               <video
                 src={previewUrl}
                 controls
                 muted
-                className="w-full h-full object-contain bg-mem-black"
+                className="max-h-full w-full object-contain bg-mem-black"
               />
             ) : (
               <img
                 src={previewUrl}
                 alt="预览"
-                className="w-full h-full object-cover"
+                className="max-h-full max-w-full object-contain"
               />
+            )}
+            {previewType === "image" && (
+              <span className="absolute bottom-1.5 right-1.5 z-10 px-2 py-0.5 bg-mem-black/70 text-white text-[10px] font-display tracking-wider opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                点击更换
+              </span>
             )}
           </div>
 
           {showUploadButton && (
-            <div className="p-4 border-t-[3px] border-mem-black flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="p-4 border-t-[3px] border-mem-black flex flex-col sm:flex-row sm:items-center gap-3 justify-between relative z-[1]">
               <div className="space-y-2 flex-1">
                 <p className="font-display text-mem-black text-sm flex items-center gap-2">
                   {previewType === "video" ? (
