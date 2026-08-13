@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import db, { ensureTables } from "@/lib/db";
+import getDb, { ensureDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 
-ensureTables();
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 function rowToProject(row) {
   if (!row) return null;
@@ -29,8 +29,14 @@ function rowToProject(row) {
   };
 }
 
+function withDb() {
+  ensureDb();
+  return getDb();
+}
+
 export async function GET() {
   try {
+    const db = withDb();
     const rows = db
       .prepare("SELECT * FROM projects ORDER BY featured DESC, id DESC")
       .all();
@@ -38,7 +44,13 @@ export async function GET() {
     return NextResponse.json({ ok: true, projects });
   } catch (err) {
     console.error("[api/projects GET] error:", err);
-    return NextResponse.json({ error: "读取失败" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "读取失败",
+        debug: IS_DEV ? (err?.message || String(err)) : undefined,
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -46,6 +58,7 @@ export async function POST(req) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    const db = withDb();
 
     const body = await req.json();
     const {
@@ -68,7 +81,6 @@ export async function POST(req) {
     if (!category || !["manga", "dev"].includes(category))
       return NextResponse.json({ error: "分类不合法" }, { status: 400 });
 
-    // Auto-generate slug if missing
     let finalSlug = (slug || "").trim();
     if (!finalSlug) {
       finalSlug =
@@ -76,7 +88,6 @@ export async function POST(req) {
           .toLowerCase()
           .replace(/[^\w\u4e00-\u9fa5]+/g, "-")
           .replace(/^-+|-+$/g, "") || `project-${Date.now()}`;
-      // dedupe
       const existing = db
         .prepare("SELECT COUNT(*) AS c FROM projects WHERE slug = ?")
         .get(finalSlug).c;
@@ -117,7 +128,10 @@ export async function POST(req) {
   } catch (err) {
     console.error("[api/projects POST] error:", err);
     return NextResponse.json(
-      { error: "创建失败：" + (err?.message || "服务器错误") },
+      {
+        error: "创建失败：" + (err?.message || "服务器错误"),
+        debug: IS_DEV ? (err?.message || String(err)) : undefined,
+      },
       { status: 500 }
     );
   }
