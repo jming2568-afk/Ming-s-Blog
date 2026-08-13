@@ -7,6 +7,8 @@ export const profile = {
   email: "jming2568@gmail.com",
   github: "github.com/jming2568-afk",
   githubUrl: "https://github.com/jming2568-afk",
+  wechatId: "",
+  wechatQrUrl: "",
   avatar: "/images/avatar.svg",
   bioShort:
     "1 年 AI 漫剧一线生产与管理经验 + 企业级 AIGC 平台独立开发经验，既懂内容生产现场，也懂工具与效率。",

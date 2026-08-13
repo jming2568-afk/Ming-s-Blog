@@ -1,52 +1,86 @@
-import path from "node:path";
 import { NextResponse } from "next/server";
+import path from "node:path";
 import { put } from "@vercel/blob";
-import { isAuthed } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { json500 } from "@/lib/routeHelpers";
 
-// POST /api/upload → multipart 上传图片/视频到 Vercel Blob（需登录）
-// 返回 { url } 可直接用于页面展示 / 填入内容 JSON
-
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function POST(request) {
+const MAX_IMAGE = 8 * 1024 * 1024; // 8 MB
+const MAX_VIDEO = 100 * 1024 * 1024; // 100 MB
+
+function extFromMime(mime) {
+  const map = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+  };
+  return map[mime] || "";
+}
+
+export async function POST(req) {
   try {
-    if (!(await isAuthed())) {
-      return NextResponse.json({ error: "未登录或登录已过期" }, { status: 401 });
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
     }
+
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json(
-        { error: "未配置 BLOB_READ_WRITE_TOKEN，无法上传。本地开发请直接使用 data/ 下的默认图片。" },
+        { error: "未配置 BLOB_READ_WRITE_TOKEN，无法上传。请在 Vercel 环境变量中配置后重试。" },
         { status: 500 }
       );
     }
-    const form = await request.formData();
-    const file = form.get("file");
-    if (!file || typeof file === "string") {
-      return NextResponse.json({ error: "缺少文件（字段名：file）" }, { status: 400 });
+
+    const formData = await req.formData();
+    const file = formData.get("file");
+    if (!file || !(file instanceof Blob)) {
+      return NextResponse.json({ error: "未选择文件" }, { status: 400 });
     }
-    const originalName = file.name || "upload.bin";
-    const safeName = originalName.replace(/[^\w.\-]/g, "_");
-    const ext = path.extname(safeName).toLowerCase() || "";
+
+    const mime = file.type;
+    const isImage = mime.startsWith("image/");
+    const isVideo = mime.startsWith("video/");
+    if (!isImage && !isVideo) {
+      return NextResponse.json({ error: "仅支持图片或视频文件" }, { status: 400 });
+    }
+
+    const maxSize = isImage ? MAX_IMAGE : MAX_VIDEO;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: `文件过大（最大 ${isImage ? "8MB" : "100MB"}）` },
+        { status: 400 }
+      );
+    }
+
+    const ext = extFromMime(mime) || (isImage ? ".jpg" : ".mp4");
     const name = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    if (buffer.length === 0) {
-      return NextResponse.json({ error: "文件为空" }, { status: 400 });
-    }
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
+    // 写入 Vercel Blob，返回公网直链
     const blob = await put(name, buffer, {
       access: "public",
-      contentType: file.type || "application/octet-stream",
+      contentType: mime,
     });
 
     return NextResponse.json({
       ok: true,
       url: blob.url,
-      pathname: blob.pathname,
-      size: buffer.length,
+      type: isImage ? "image" : "video",
+      mime,
+      size: file.size,
+      name: file.name || name,
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message || "上传失败" }, { status: 500 });
+    return json500(err, { routeName: "api/upload" });
   }
 }
