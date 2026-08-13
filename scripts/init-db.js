@@ -57,16 +57,17 @@ db.exec(`
 `);
 console.log("✅ Tables ready.");
 
-// Seed default admin user
+// Seed default admin user（注意：初始账号已统一为 useradmin/useradmin123，不再创建旧 admin）
 const userCount = db.prepare("SELECT COUNT(*) AS c FROM users").get().c;
 if (userCount === 0) {
-  const hash = bcrypt.hashSync("admin123", 10);
+  const hash = bcrypt.hashSync("useradmin123", 10);
   db.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)").run(
-    "admin",
+    "useradmin",
     hash
   );
-  console.log("👤 Created default admin user: admin / admin123");
+  console.log("👤 Created default admin user: useradmin / useradmin123");
 } else {
+  // 迁移：如果旧环境里存在 admin/admin123，保留 useradmin；也不再额外插 admin。
   console.log(`👤 Users table has ${userCount} user(s), skipping admin seed.`);
 }
 
