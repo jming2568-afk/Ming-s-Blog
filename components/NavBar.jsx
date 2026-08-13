@@ -76,7 +76,7 @@ export default function NavBar() {
             </span>
             <span className="font-display text-2xl sm:text-3xl tracking-tighter text-mem-black">
               李佳铭
-              <span className="marker-yellow ml-1">.dev</span>
+              <span className="marker-yellow ml-1">SubMing.Top</span>
             </span>
           </Link>
 

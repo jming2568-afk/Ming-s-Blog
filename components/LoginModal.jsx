@@ -25,8 +25,8 @@ export default function LoginModal({ open, onClose }) {
   }, [open]);
 
   const fillDemo = () => {
-    setUsername("admin");
-    setPassword("admin123");
+    setUsername("useradmin");
+    setPassword("useradmin123");
     setError("");
   };
 
@@ -107,7 +107,7 @@ export default function LoginModal({ open, onClose }) {
                   icon={<FiUser />}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="useradmin"
                   autoComplete="username"
                   required
                 />
@@ -153,9 +153,11 @@ export default function LoginModal({ open, onClose }) {
                   ✨ 一键填充演示账号
                 </button>
                 <p className="text-xs font-body text-mem-black/60 leading-relaxed">
-                  <span className="font-display text-mem-black">演示账号：</span>
-                  <span className="marker-yellow">admin</span> /{" "}
-                  <span className="marker-green">admin123</span>
+                  <span className="font-display text-mem-black">初始账号：</span>
+                  <span className="marker-yellow">useradmin</span> /{" "}
+                  <span className="marker-green">useradmin123</span>
+                  <br />
+                  登录失败惩罚：5 分钟内 3 次失败封禁 5 分钟，再次失败翻倍，上限 2 小时。
                   <br />
                   当前数据存储于本地 SQLite 数据库与文件系统。
                 </p>
