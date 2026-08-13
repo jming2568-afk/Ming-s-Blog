@@ -11,8 +11,12 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
-const DB_PATH = process.env.DB_PATH || path.join(ROOT, "data", "portfolio.db");
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(ROOT, "public", "uploads");
+
+// init-db 明确以项目 ROOT 为基准，但也允许通过 DB_PATH/UPLOAD_DIR 覆盖，保持与 lib/db.js 一致。
+const DEFAULT_DB_PATH = path.join(ROOT, "data", "portfolio.db");
+const DEFAULT_UPLOAD_DIR = path.join(ROOT, "public", "uploads");
+const DB_PATH = process.env.DB_PATH || DEFAULT_DB_PATH;
+const UPLOAD_DIR = process.env.UPLOAD_DIR || DEFAULT_UPLOAD_DIR;
 
 if (!fs.existsSync(path.dirname(DB_PATH))) {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });

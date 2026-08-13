@@ -10,8 +10,42 @@ export const dynamic = "force-dynamic";
 
 const MAX_IMAGE = 8 * 1024 * 1024; // 8 MB
 const MAX_VIDEO = 100 * 1024 * 1024; // 100 MB
-const UPLOAD_ROOT =
-  process.env.UPLOAD_DIR || path.join(process.cwd(), "public", "uploads");
+
+// 上传目录默认策略：与 lib/db.js 保持一致，避免 cwd 被切到 /var/task 时无处可写。
+// 预览/Serverless 下如果 UPLOAD_DIR 仍在 /var/task 里，则自动降级到 /tmp/<project>/public/uploads。
+function computeDefaultUploadDir() {
+  const workspace = process.env.TRAE_ENV_WORKSPACE || process.env.TRAE_WORKSPACE;
+  const cwd = process.cwd();
+  const candidate =
+    workspace && !cwd.startsWith("/var/task")
+      ? path.join(workspace, "public", "uploads")
+      : path.join(cwd, "public", "uploads");
+  if (
+    candidate.startsWith("/var/task/") ||
+    candidate === "/var/task" ||
+    cwd === "/var/task" ||
+    !isDirWritable(path.dirname(candidate))
+  ) {
+    const slug = (process.env.npm_package_name || "portfolio").replace(/[^a-zA-Z0-9_-]/g, "_") || "portfolio";
+    return path.join("/tmp", slug, "public", "uploads");
+  }
+  return candidate;
+}
+function isDirWritable(dir) {
+  try {
+    if (!fs.existsSync(dir)) {
+      // 不强制创建，只对已存在的目录做写探测
+      return false;
+    }
+    const probe = path.join(dir, `.upload_probe_${process.pid}_${Date.now()}`);
+    fs.writeFileSync(probe, "");
+    fs.unlinkSync(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+const UPLOAD_ROOT = process.env.UPLOAD_DIR || computeDefaultUploadDir();
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
