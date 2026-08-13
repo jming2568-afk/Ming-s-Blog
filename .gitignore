@@ -39,3 +39,10 @@ npm-install.log
 
 # typescript
 *.tsbuildinfo
+
+# local db & uploads
+/data/portfolio.db
+/data/portfolio.db-wal
+/data/portfolio.db-shm
+/public/uploads/*
+!/public/uploads/.gitkeep
