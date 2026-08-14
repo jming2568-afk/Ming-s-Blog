@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { loginSchema, registerSchema } from "@platform/shared";
-import { AuthError, createSession, destroySession, getSessionUser, registerUser, verifyCredentials } from "./auth.service.js";
+import { AuthError, createSession, destroySession, getSessionUser, registerUser, syncRoleIfAdmin, verifyCredentials } from "./auth.service.js";
 import { RateLimiter } from "./rate-limit.js";
 
 export const SESSION_COOKIE = "sid";
@@ -53,7 +53,8 @@ export function createAuthRoutes(config: { nodeEnv: string }) {
       return c.json({ ok: false, error: parsed.error.issues[0]?.message ?? "请求格式错误" }, 400);
     }
     try {
-      const user = await registerUser(parsed.data);
+      const rawUser = await registerUser(parsed.data);
+      const user = await syncRoleIfAdmin(rawUser);
       const token = await createSession(user.id);
       c.header("set-cookie", buildCookie(token, config.nodeEnv));
       return c.json({ ok: true, user }, 201);
@@ -73,7 +74,8 @@ export function createAuthRoutes(config: { nodeEnv: string }) {
       return c.json({ ok: false, error: parsed.error.issues[0]?.message ?? "请求格式错误" }, 400);
     }
     try {
-      const user = await verifyCredentials(parsed.data.username, parsed.data.password);
+      const rawUser = await verifyCredentials(parsed.data.username, parsed.data.password);
+      const user = await syncRoleIfAdmin(rawUser);
       const token = await createSession(user.id);
       c.header("set-cookie", buildCookie(token, config.nodeEnv));
       return c.json({ ok: true, user });

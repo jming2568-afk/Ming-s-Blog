@@ -21,3 +21,13 @@ describe("404", () => {
     expect(body.ok).toBe(false);
   });
 });
+
+describe("安全响应头（P5）", () => {
+  it("响应携带安全头", async () => {
+    const app = createApp();
+    const res = await app.request("/api/health");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(res.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(res.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+  });
+});

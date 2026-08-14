@@ -130,3 +130,16 @@ export class AuthError extends Error {
     this.code = code;
   }
 }
+
+/** 管理员角色同步：ADMIN_USERNAMES 环境变量中的用户自动提升为 admin（P5） */
+export async function syncRoleIfAdmin(user: PublicUser): Promise<PublicUser> {
+  const admins = (process.env.ADMIN_USERNAMES ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!admins.includes(user.username) || user.role === "admin") return user;
+  const db = getDb();
+  if (!db) return user;
+  const [row] = await db.db.update(users).set({ role: "admin" }).where(eq(users.id, user.id)).returning();
+  return row ? toPublicUser(row) : user;
+}

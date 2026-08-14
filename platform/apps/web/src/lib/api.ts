@@ -192,3 +192,41 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ---- AI（P5）----
+export type PolishKind = "summary" | "experience" | "project" | "skill";
+
+export function apiPolish(input: { kind: PolishKind; text: string; jd?: string }) {
+  return apiPost<{ ok: boolean; polished: string }>("/api/ai/polish", input);
+}
+
+export interface AiImportResult {
+  ok: boolean;
+  data: ResumeData;
+  source: "ocr" | "text";
+}
+
+export async function apiImportResume(file: File): Promise<AiImportResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/ai/import", { method: "POST", credentials: "include", body: form });
+  const body = (await res.json().catch(() => ({}))) as AiImportResult & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `导入失败 (${res.status})`);
+  return body;
+}
+
+// ---- admin（P5）----
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  displayName: string | null;
+  role: string;
+  themeId: number | null;
+  createdAt: string;
+  resumeCount: number;
+}
+
+export function apiAdminUsers() {
+  return apiGet<{ ok: boolean; users: AdminUser[] }>("/api/admin/users");
+}

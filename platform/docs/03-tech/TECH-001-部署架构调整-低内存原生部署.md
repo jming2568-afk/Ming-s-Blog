@@ -24,10 +24,12 @@ summary: 因 2C1G 低内存 VPS（可用 701Mi，无法升级实例）承载不�
 | 2 | 数据库 | PostgreSQL 16（独立进程） | **SQLite（better-sqlite3，嵌入式）** | 省 ~200MB 常驻；20 人试运行数据量完全足够 |
 | 3 | PDF 导出 | 服务端 `apps/pdf`（Playwright 无头 Chromium） | **客户端浏览器打印**（`window.print()` + `@media print`） | Chromium 渲染峰值 500MB+，在 701Mi 上必 OOM；客户端零成本且更贴「三端同版式」卖点 |
 | 4 | 对象存储 | 本地 MinIO | **阿里云 OSS**（S3 兼容，远端） | 省本地 100MB+；生产本就应使用云端对象存储 |
-| 5 | CI/CD | compose 起全栈验收 | 保留 GitHub Actions（lint/typecheck/test/build），集成测试改用 SQLite（CI 可全跑） | 保留自动化与回归信心 |
+| 5 | 更新机制 | compose 起全栈验收 | **本地构建 + scp/tar 产物直传服务器 + systemd 重启**；GitHub Actions 仅作验证门禁（typecheck/test/build，不自动部署） | 服务器零构建、无 Docker 传输依赖，更新由开发机直连完成 |
 | 6 | 兜底 | 无 | **加 4G swap**（约内存 5.7 倍，兜住服务器端构建/突发峰值） | 防突发 OOM |
 
 **一句话**：V0.03 业务架构（Hono API + React SPA + Drizzle ORM + S3 兼容存储 + LLM 代理）**全部保留**，只换「部署底座」——数据库方言、PDF 实现方式、部署编排三处，使其能在 701Mi 内存的机器上长期稳定运行。
+
+**更新机制（2026-08-15 定案）**：本地构建 → 构建产物（dist）经 scp/tar 直传服务器 → 数据库迁移 → `systemctl restart`。传产物不传源码；服务器无源码、无 Docker、无构建工具。详见 OPS-001。
 
 ---
 
@@ -212,7 +214,7 @@ STORAGE_PUBLIC_URL_BASE=https://resume-platform.oss-cn-hangzhou.aliyuncs.com
 2. **新增 `platform/deploy/` 目录**（模板文件，落地下次部署时使用）：
    - `resume-api.service` —— systemd unit（ExecStart=node dist/index.js、Restart=always、`LimitNOFILE`、可选 `MemoryMax=512M`）
    - `nginx-resume.conf` —— SPA 静态 + `/assets/` 长缓存 + `/api/*` 反代 127.0.0.1:3000（基于现有 `nginx/web.conf` 扩展）
-   - `deploy.sh` —— build → rsync 产物 → `systemctl restart resume-api`（幂等）
+   - `deploy.sh` —— 本地 build → **scp/tar 产物直传** → 远程迁移+`systemctl restart resume-api`（幂等；Windows 原生 scp.exe/tar.exe + ssh shouer，两端均无需装 rsync）
    - `backup.sh` —— `sqlite3 resume.db ".backup ..."` + `ossutil cp` 到 OSS（配合 cron）
 3. **健康检查口径**：`/api/health` 契约不变（systemd/nginx 用 curl 探测）
 
@@ -238,9 +240,9 @@ STORAGE_PUBLIC_URL_BASE=https://resume-platform.oss-cn-hangzhou.aliyuncs.com
 
 ### 4.7 CI/CD（`.github/workflows/ci.yml`）
 
-- `pnpm install` / `docs:check` / `typecheck` / `test` / `build` **保持不变**
+- `pnpm install` / `docs:check` / `typecheck` / `test` / `build` **保持不变**，作为发布前验证门禁
 - 集成测试随 4.6 改造后自动纳入 `pnpm test`（CI 无需再起 postgres 服务）
-- 可选（P6 再接）：新增 deploy job（push v0.3/tag）→ `deploy.sh`（rsync + systemctl），VPS 配 deploy key
+- **CI 不接自动部署**：更新由开发机本地构建后直传（见 OPS-001 §3）。后续如需自动化，可加 deploy job（预留接口，本次不做）
 
 ---
 
@@ -326,9 +328,11 @@ STORAGE_PUBLIC_URL_BASE=https://resume-platform.oss-cn-hangzhou.aliyuncs.com
 fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
-# 部署（deploy.sh 核心）
+# 部署（deploy.sh 核心：本地构建 + tar/scp 直传）
 pnpm --filter @platform/web build && pnpm --filter @platform/api build
-rsync -az --delete apps/web/dist/ root@server:/opt/resume-platform/app/web/
-rsync -az --delete apps/api/dist/ root@server:/opt/resume-platform/app/api/
-systemctl restart resume-api
+# 备份上一版 + SQLite 后，tar 管道覆盖（或 scp -r）：
+tar -C apps/web -czf - dist | ssh shouer "rm -rf /opt/resume-platform/app/web && mkdir -p /opt/resume-platform/app/web && tar -xzf - -C /opt/resume-platform/app/web"
+tar -C apps/api -czf - dist | ssh shouer "rm -rf /opt/resume-platform/app/api && mkdir -p /opt/resume-platform/app/api && tar -xzf - -C /opt/resume-platform/app/api"
+ssh shouer "cd /opt/resume-platform/app/api && SQLITE_PATH=/opt/resume-platform/data/resume.db node dist/migrate-cli.js && systemctl restart resume-api"
+ssh shouer "curl -fsS http://127.0.0.1:3000/api/health && echo OK"
 ```

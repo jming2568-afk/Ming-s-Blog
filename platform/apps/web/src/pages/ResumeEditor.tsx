@@ -16,11 +16,13 @@ import {
   apiExportWord,
   apiGetResume,
   apiGetThemes,
+  apiPolish,
   apiPublishResume,
   apiUpdateMe,
   apiUpdateResume,
   apiUploadMedia,
   downloadBlob,
+  type PolishKind,
   type ThemeItem,
 } from "../lib/api.js";
 
@@ -82,6 +84,34 @@ function AddButton({ onClick, children }: { onClick: () => void; children: React
   return (
     <button type="button" onClick={onClick} className="rounded px-3 py-1.5 text-sm font-bold" style={{ background: "var(--color-primary)", color: "#fff" }}>
       {children}
+    </button>
+  );
+}
+
+/** AI 润色按钮（P5 F-A5）：STAR 润色，结果替换原文 */
+function PolishButton({ kind, text, onApply }: { kind: PolishKind; text: string; onApply: (v: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const apply = async () => {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    try {
+      const res = await apiPolish({ kind, text });
+      onApply(res.polished);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "AI 润色失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={() => void apply()}
+      disabled={busy || !text.trim()}
+      className="rounded px-2 py-1 text-xs font-bold disabled:opacity-40"
+      style={{ background: "var(--color-accent)", color: "#fff" }}
+    >
+      {busy ? "润色中…" : "✨ AI 润色"}
     </button>
   );
 }
@@ -360,7 +390,10 @@ export function ResumeEditor() {
           </Section>
 
           <Section title="个人简介">
-            <TextArea label="一句话介绍自己" value={data.summary} onChange={(v) => update((d) => ({ ...d, summary: v }))} rows={3} />
+            <div className="flex items-center justify-between">
+              <TextArea label="一句话介绍自己" value={data.summary} onChange={(v) => update((d) => ({ ...d, summary: v }))} rows={3} />
+            </div>
+            <PolishButton kind="summary" text={data.summary} onApply={(v) => update((d) => ({ ...d, summary: v }))} />
           </Section>
 
           <Section title="工作经历">
@@ -376,6 +409,7 @@ export function ResumeEditor() {
                 </div>
                 <Field label="时间段" value={item.period} onChange={(v) => updateWork(i)({ period: v })} placeholder="2022.06 - 2024.08" />
                 <TextArea label="工作描述（每行一条）" value={item.description.join("\n")} onChange={(v) => updateWork(i)({ description: v.split("\n") })} rows={3} />
+                <PolishButton kind="experience" text={item.description.join("\n")} onApply={(v) => updateWork(i)({ description: v.split("\n") })} />
               </ItemCard>
             ))}
             <AddButton onClick={() => update((d) => ({ ...d, workExperience: [...d.workExperience, { company: "", role: "", period: "", description: [] }] }))}>
@@ -399,6 +433,7 @@ export function ResumeEditor() {
                   <Field label="链接" value={item.link} onChange={(v) => updateProject(i)({ link: v })} />
                 </div>
                 <TextArea label="项目描述（每行一条）" value={item.description.join("\n")} onChange={(v) => updateProject(i)({ description: v.split("\n") })} rows={3} />
+                <PolishButton kind="project" text={item.description.join("\n")} onApply={(v) => updateProject(i)({ description: v.split("\n") })} />
               </ItemCard>
             ))}
             <AddButton onClick={() => update((d) => ({ ...d, projects: [...d.projects, { name: "", role: "", period: "", link: "", description: [] }] }))}>
