@@ -46,3 +46,6 @@ npm-install.log
 /data/portfolio.db-shm
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# logs
+*.log
