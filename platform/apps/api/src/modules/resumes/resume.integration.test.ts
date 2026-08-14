@@ -1,8 +1,8 @@
-// 简历 CRUD / 发布 / 公共接口集成测试：需真实 PostgreSQL（本地 compose 起 postgres 后运行；CI 无 DB 自动跳过）
-import { describe, expect, it } from "vitest";
+// 简历 CRUD / 发布 / 公共接口集成测试：自动使用临时 SQLite（TECH-001 §4.6），CI 全跑
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../app.js";
+import { setupTestDb, type TestDb } from "../../test/sqlite-test.js";
 
-const hasDb = Boolean(process.env.DATABASE_URL);
 const base = Date.now().toString(36);
 
 async function register(app: ReturnType<typeof createApp>, name: string) {
@@ -29,10 +29,16 @@ async function req(
   });
 }
 
-describe.skipIf(!hasDb)("resumes API 集成", () => {
+describe("resumes API 集成（SQLite）", () => {
+  let testDb: TestDb;
   const app = createApp();
   const userA = `ra_${base}`;
   const userB = `rb_${base}`;
+
+  beforeAll(async () => {
+    testDb = await setupTestDb();
+  });
+  afterAll(() => testDb.cleanup());
 
   it("创建 → 更新 → 发布 → 公共页 → 下架 → 删除 全流程（含所有权）", async () => {
     const a = await register(app, userA);

@@ -68,8 +68,8 @@ export function createApp() {
   // ---- 媒体上传（P4）----
   app.route("/api/media", createMediaRoutes());
 
-  // ---- 导出（P4：PDF / Word）----
-  app.route("/api/export", createExportRoutes({ pdfServiceUrl: config.pdfServiceUrl }));
+  // ---- 导出（P4：Word；PDF 走客户端打印，TECH-001）----
+  app.route("/api/export", createExportRoutes());
 
   // ---- 404 ----
   app.notFound((c) => jsonError("接口不存在", 404));

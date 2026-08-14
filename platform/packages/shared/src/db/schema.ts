@@ -1,20 +1,22 @@
 import {
-  pgTable,
-  serial,
-  text,
-  boolean,
-  timestamp,
-  jsonb,
+  sqliteTable,
   integer,
+  text,
   uniqueIndex,
   index,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
+
+/**
+ * 数据模型（TECH-001：PostgreSQL → SQLite，Drizzle ORM 保留）。
+ * 字段名/表名/业务语义与 PG 版完全一致，仅方言变化：
+ *   serial → integer autoIncrement；jsonb → text(mode:json)；timestamp → integer(mode:timestamp)
+ */
 
 /** 用户表 */
-export const users = pgTable(
+export const users = sqliteTable(
   "users",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     username: text("username").notNull(),
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
@@ -22,8 +24,8 @@ export const users = pgTable(
     avatarUrl: text("avatar_url"),
     themeId: integer("theme_id"),
     role: text("role").notNull().default("user"), // user | admin
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().defaultNow(),
   },
   (t) => ({
     usernameIdx: uniqueIndex("users_username_idx").on(t.username),
@@ -32,16 +34,16 @@ export const users = pgTable(
 );
 
 /** 会话表（httpOnly cookie，可撤销） */
-export const sessions = pgTable(
+export const sessions = sqliteTable(
   "sessions",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
   },
   (t) => ({
     tokenIdx: uniqueIndex("sessions_token_idx").on(t.tokenHash),
@@ -49,21 +51,21 @@ export const sessions = pgTable(
   })
 );
 
-/** 简历表（data 为 JSONB 结构化内容，slug 为专属链接） */
-export const resumes = pgTable(
+/** 简历表（data 为 JSON 结构化内容，slug 为专属链接） */
+export const resumes = sqliteTable(
   "resumes",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     slug: text("slug").notNull(),
-    data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
-    isPublic: boolean("is_public").notNull().default(false),
-    publishedAt: timestamp("published_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    data: text("data", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
+    isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().defaultNow(),
   },
   (t) => ({
     slugIdx: uniqueIndex("resumes_slug_idx").on(t.slug),
@@ -72,15 +74,15 @@ export const resumes = pgTable(
 );
 
 /** 简历历史版本（P4 启用） */
-export const resumeVersions = pgTable(
+export const resumeVersions = sqliteTable(
   "resume_versions",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     resumeId: integer("resume_id")
       .notNull()
       .references(() => resumes.id, { onDelete: "cascade" }),
-    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    data: text("data", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
   },
   (t) => ({
     resumeIdx: index("resume_versions_resume_idx").on(t.resumeId),
@@ -88,19 +90,19 @@ export const resumeVersions = pgTable(
 );
 
 /** 主题表（系统预置 + 用户自定义，tokens 为设计令牌） */
-export const themes = pgTable("themes", {
-  id: serial("id").primaryKey(),
+export const themes = sqliteTable("themes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  tokens: jsonb("tokens").$type<Record<string, string>>().notNull().default({}),
-  isSystem: boolean("is_system").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  tokens: text("tokens", { mode: "json" }).$type<Record<string, string>>().notNull().default({}),
+  isSystem: integer("is_system", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
 });
 
-/** 媒体表（TOS 对象登记，P4 启用） */
-export const media = pgTable(
+/** 媒体表（OSS 对象登记，P4 启用） */
+export const media = sqliteTable(
   "media",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -108,7 +110,7 @@ export const media = pgTable(
     url: text("url").notNull(),
     mime: text("mime").notNull(),
     size: integer("size").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
   },
   (t) => ({
     userIdx: index("media_user_idx").on(t.userId),

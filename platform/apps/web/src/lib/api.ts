@@ -177,11 +177,7 @@ export async function apiUploadMedia(file: File): Promise<MediaResult> {
   return body;
 }
 
-// ---- export ----
-export function apiExportPdf(slug: string) {
-  return apiGet<ArrayBuffer>(`/api/export/pdf/${slug}`).then((buf) => new Blob([buf as ArrayBuffer], { type: "application/pdf" }));
-}
-
+// ---- export（TECH-001：PDF 走客户端打印 window.print()；Word 服务端生成）----
 export function apiExportWord(slug: string) {
   return apiGet<ArrayBuffer>(`/api/export/word/${slug}`).then(
     (buf) => new Blob([buf as ArrayBuffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })

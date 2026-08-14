@@ -24,4 +24,6 @@ export interface StorageConfig {
   bucket: string;
   /** 公开访问的基础 URL（例如 MinIO 直链域名）；为空则从 endpoint 推导 */
   publicUrlBase?: string;
+  /** 是否 path-style（MinIO 需 true；阿里 OSS 等虚拟主机式 false，默认） */
+  pathStyle?: boolean;
 }

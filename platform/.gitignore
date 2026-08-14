@@ -21,3 +21,6 @@ coverage/
 .DS_Store
 Thumbs.db
 *.log
+
+# local dev db (TECH-001 SQLite)
+data/*.db*

@@ -1,13 +1,17 @@
-// 认证接口集成测试：需要真实 PostgreSQL（DATABASE_URL），本地 compose 起 postgres 后运行；
-// CI 无 DATABASE_URL 时自动跳过。
-import { describe, expect, it } from "vitest";
+// 认证接口集成测试：自动使用临时 SQLite（TECH-001 §4.6），CI 全跑
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../app.js";
+import { setupTestDb, type TestDb } from "../../test/sqlite-test.js";
 
-const hasDb = Boolean(process.env.DATABASE_URL);
-
-describe.skipIf(!hasDb)("auth API 集成", () => {
+describe("auth API 集成（SQLite）", () => {
+  let testDb: TestDb;
   const app = createApp();
   const uname = `u${Date.now().toString(36)}`;
+
+  beforeAll(async () => {
+    testDb = await setupTestDb();
+  });
+  afterAll(() => testDb.cleanup());
 
   it("注册 → 登录 → me → 登出 全流程", async () => {
     // 注册

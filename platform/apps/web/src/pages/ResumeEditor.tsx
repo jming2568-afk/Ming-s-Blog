@@ -13,7 +13,6 @@ import {
 import { ResumeView } from "@platform/ui";
 import QRCode from "qrcode";
 import {
-  apiExportPdf,
   apiExportWord,
   apiGetResume,
   apiGetThemes,
@@ -224,14 +223,6 @@ export function ResumeEditor() {
       .catch(() => setQrDataUrl(null));
   }, [publishOpen, slug]);
 
-  const exportPdf = async () => {
-    try {
-      const blob = await apiExportPdf(slug);
-      downloadBlob(blob, `${title}.pdf`);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "PDF 导出失败");
-    }
-  };
   const exportWord = async () => {
     try {
       const blob = await apiExportWord(slug);
@@ -239,6 +230,11 @@ export function ResumeEditor() {
     } catch (err) {
       alert(err instanceof Error ? err.message : "Word 导出失败");
     }
+  };
+
+  // 打印 / 另存 PDF（TECH-001 §4.2：客户端打印，复用 @media print）
+  const printPdf = () => {
+    window.open(publicLink, "_blank");
   };
 
   // 头像上传
@@ -315,8 +311,8 @@ export function ResumeEditor() {
               {copied ? "已复制 ✓" : "复制链接"}
             </button>
             {published && (
-              <button onClick={() => void exportPdf()} className="rounded px-2 py-1" style={{ border: "1px solid var(--color-border)" }}>
-                下载 PDF
+              <button onClick={printPdf} className="rounded px-2 py-1" style={{ border: "1px solid var(--color-border)" }}>
+                打印 / 另存 PDF
               </button>
             )}
             <button onClick={() => void exportWord()} className="rounded px-2 py-1" style={{ border: "1px solid var(--color-border)" }}>
@@ -504,8 +500,8 @@ export function ResumeEditor() {
               <button onClick={copyLink} className="rounded px-4 py-2 text-sm font-bold" style={{ background: "var(--color-primary)", color: "#fff" }}>
                 {copied ? "已复制 ✓" : "复制链接"}
               </button>
-              <button onClick={() => void exportPdf()} className="rounded px-4 py-2 text-sm" style={{ border: "1px solid var(--color-border)" }}>
-                下载 PDF
+              <button onClick={printPdf} className="rounded px-4 py-2 text-sm" style={{ border: "1px solid var(--color-border)" }}>
+                打印 / 另存 PDF
               </button>
               <button onClick={() => void exportWord()} className="rounded px-4 py-2 text-sm" style={{ border: "1px solid var(--color-border)" }}>
                 下载 Word

@@ -25,7 +25,7 @@ summary: 因 2C1G 低内存 VPS（可用 701Mi，无法升级实例）承载不�
 | 3 | PDF 导出 | 服务端 `apps/pdf`（Playwright 无头 Chromium） | **客户端浏览器打印**（`window.print()` + `@media print`） | Chromium 渲染峰值 500MB+，在 701Mi 上必 OOM；客户端零成本且更贴「三端同版式」卖点 |
 | 4 | 对象存储 | 本地 MinIO | **阿里云 OSS**（S3 兼容，远端） | 省本地 100MB+；生产本就应使用云端对象存储 |
 | 5 | CI/CD | compose 起全栈验收 | 保留 GitHub Actions（lint/typecheck/test/build），集成测试改用 SQLite（CI 可全跑） | 保留自动化与回归信心 |
-| 6 | 兜底 | 无 | **加 1~2G swap** | 防突发 OOM |
+| 6 | 兜底 | 无 | **加 4G swap**（约内存 5.7 倍，兜住服务器端构建/突发峰值） | 防突发 OOM |
 
 **一句话**：V0.03 业务架构（Hono API + React SPA + Drizzle ORM + S3 兼容存储 + LLM 代理）**全部保留**，只换「部署底座」——数据库方言、PDF 实现方式、部署编排三处，使其能在 701Mi 内存的机器上长期稳定运行。
 
@@ -91,7 +91,7 @@ summary: 因 2C1G 低内存 VPS（可用 701Mi，无法升级实例）承载不�
 
 - **无 Docker**、无独立 DB 进程、无本地对象存储、无浏览器渲染服务。
 - 前端 SPA 与 API **同源**（nginx 反代 `/api`），生产不再需要 CORS 白名单。
-- 常驻内存预算：nginx ~20MB + API ~80MB + 阿里 agent ~70MB ≈ **~170–200MB**，加 2G swap 兜底，余量充足。
+- 常驻内存预算：nginx ~20MB + API ~80MB + 阿里 agent ~70MB ≈ **~170–200MB**，加 4G swap 兜底，余量充足。
 
 ---
 
@@ -103,7 +103,7 @@ summary: 因 2C1G 低内存 VPS（可用 701Mi，无法升级实例）承载不�
 | Node API（Hono + better-sqlite3） | 60–100MB |
 | SQLite（嵌入式，无独立进程） | 0（计入 API 进程） |
 | 阿里云 agents | ~70MB |
-| **合计** | **~170–200MB**（2G swap 兜底） |
+| **合计** | **~170–200MB**（4G swap 兜底） |
 
 ---
 
@@ -279,13 +279,13 @@ STORAGE_PUBLIC_URL_BASE=https://resume-platform.oss-cn-hangzhou.aliyuncs.com
 | 方言差异（jsonb/timestamp/迁移 SQL） | 中 | drizzle-kit 生成 + 人工 review 迁移 SQL；集成测试在 SQLite 上全跑兜底 |
 | 无 Docker 后环境一致性 | 中 | `.nvmrc` 锁定 Node 22；`deploy.sh` 幂等；文档化依赖清单 |
 | OSS S3 兼容细节（forcePathStyle/endpoint） | 中 | 接入时先 ossutil 验证；`STORAGE_PATH_STYLE` 可配置 |
-| 内存波动（如大文件上传/LLM 响应） | 低 | 2G swap 兜底；上传大小限制（复用 V0.02 经验：图片≤8MB 等） |
+| 内存波动（如大文件上传/LLM 响应） | 低 | 4G swap 兜底；上传大小限制（复用 V0.02 经验：图片≤8MB 等） |
 
 ---
 
 ## 8. 服务器落地清单（OPS，P6 执行）
 
-1. **加 swap 2G**（`fallocate` + `mkswap` + `swapon` + fstab）
+1. **加 swap 4G**（`fallocate` + `mkswap` + `swapon` + fstab；已落地）
 2. 安装：nginx、Node 22 LTS（nvm 或官方二进制）、pnpm、sqlite3、ossutil
 3. 目录：`/opt/resume-platform/{app,data,logs}`；SQLite 放 `data/resume.db`
 4. 部署：`deploy.sh`（build → rsync → `systemctl restart resume-api`）；nginx 配 TLS（certbot）
@@ -323,7 +323,7 @@ STORAGE_PUBLIC_URL_BASE=https://resume-platform.oss-cn-hangzhou.aliyuncs.com
 
 ```bash
 # swap
-fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
 # 部署（deploy.sh 核心）

@@ -56,21 +56,12 @@ check(
   `→ ${wordRes.status} ${wordBuf.byteLength}B`
 );
 
-// 5. PDF 导出（首次渲染较慢，Chromium 启动 + 页面加载）
-console.log("⏳ PDF 渲染中（首次约 10-30s）…");
-const pdfRes = await fetch(`${base}/api/export/pdf/${slug}`, { headers: { cookie: sid } });
-const pdfBuf = await pdfRes.arrayBuffer();
-check(
-  "PDF 导出 200 + application/pdf",
-  pdfRes.status === 200 && (pdfRes.headers.get("content-type") ?? "").includes("application/pdf") && pdfBuf.byteLength > 1000,
-  `→ ${pdfRes.status} ${pdfBuf.byteLength}B`
-);
-
+// 5. PDF 已改客户端打印（TECH-001 §4.2）：验证 Word 仍可用 + 匿名导出被拒
 // 6. 匿名导出被拒
 const anonWord = await fetch(`${base}/api/export/word/${slug}`);
 check("匿名导出被拒 401", anonWord.status === 401, `→ ${anonWord.status}`);
 
-// 7. 头像 URL 可匿名读取（MinIO 公开读策略）
+// 7. 头像 URL 可匿名读取（MinIO 公开读策略 / OSS 桶策略）
 if (mediaUrl) {
   const head = await fetch(mediaUrl, { method: "HEAD" });
   check("头像公网可读", head.ok, `→ ${head.status}`);

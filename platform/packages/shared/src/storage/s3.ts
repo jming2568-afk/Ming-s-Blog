@@ -11,6 +11,7 @@ import type { StorageClient, StorageConfig, StoragePutOptions } from "./types.js
 /**
  * S3 兼容存储实现（@aws-sdk/client-s3 + 自定义 endpoint）。
  * TOS / MinIO / 阿里 OSS / 腾讯 COS 均可通过 S3 兼容端点接入。
+ * forcePathStyle 可配置（STORAGE_PATH_STYLE）：MinIO 用 true，阿里 OSS 等虚拟主机式用 false。
  */
 export function createS3Storage(config: StorageConfig): StorageClient {
   const client = new S3Client({
@@ -20,7 +21,7 @@ export function createS3Storage(config: StorageConfig): StorageClient {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
     },
-    forcePathStyle: true, // MinIO / TOS 需 path-style
+    forcePathStyle: config.pathStyle ?? false,
   });
 
   function publicUrl(key: string): string {
@@ -93,5 +94,6 @@ export function storageConfigFromEnv(env: NodeJS.ProcessEnv = process.env): Stor
     secretAccessKey,
     bucket,
     publicUrlBase: env.STORAGE_PUBLIC_URL_BASE,
+    pathStyle: env.STORAGE_PATH_STYLE === "true",
   };
 }
