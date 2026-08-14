@@ -14,6 +14,7 @@ export function Layout() {
             <Link to="/app">工作台</Link>
             {user ? (
               <>
+                <Link to="/app/settings">设置</Link>
                 <span style={{ color: "var(--color-muted)" }}>{user.displayName ?? user.username}</span>
                 <button onClick={() => void logout()} style={{ color: "var(--color-primary)" }}>
                   退出

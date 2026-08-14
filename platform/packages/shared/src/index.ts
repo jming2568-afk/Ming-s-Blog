@@ -2,3 +2,4 @@
 export * from "./utils.js";
 export * from "./db/schema.js";
 export * from "./validation/auth.js";
+export * from "./validation/resume.js";

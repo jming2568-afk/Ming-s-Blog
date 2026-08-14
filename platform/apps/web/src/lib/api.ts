@@ -1,4 +1,6 @@
 /** 极简 API 客户端（fetch 带 cookie，同源代理） */
+import type { ResumeData } from "@platform/shared";
+
 export interface PublicUser {
   id: number;
   username: string;
@@ -34,6 +36,18 @@ export function apiPost<T = unknown>(path: string, data?: unknown): Promise<T> {
     headers: data !== undefined ? { "content-type": "application/json" } : undefined,
     body: data !== undefined ? JSON.stringify(data) : undefined,
   });
+}
+
+export function apiPut<T = unknown>(path: string, data?: unknown): Promise<T> {
+  return request<T>(path, {
+    method: "PUT",
+    headers: data !== undefined ? { "content-type": "application/json" } : undefined,
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+  });
+}
+
+export function apiDelete<T = unknown>(path: string): Promise<T> {
+  return request<T>(path, { method: "DELETE" });
 }
 
 export interface HealthResponse {
@@ -72,4 +86,78 @@ export async function apiMe(): Promise<PublicUser | null> {
   if (!res.ok) throw new Error("获取会话失败");
   const body = (await res.json()) as { ok: boolean; user: PublicUser };
   return body.user;
+}
+
+// ---- users ----
+export function apiUpdateMe(patch: { themeId?: number | null; displayName?: string }) {
+  return apiPut<{ ok: boolean; user: PublicUser }>("/api/users/me", patch);
+}
+
+// ---- themes ----
+export interface ThemeItem {
+  id: number;
+  name: string;
+  tokens: Record<string, string>;
+  isSystem: boolean;
+}
+
+export function apiGetThemes() {
+  return apiGet<{ ok: boolean; themes: ThemeItem[] }>("/api/themes");
+}
+
+// ---- resumes ----
+export interface ResumeItem {
+  id: number;
+  userId: number;
+  title: string;
+  slug: string;
+  data: ResumeData;
+  isPublic: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function apiListResumes() {
+  return apiGet<{ ok: boolean; resumes: ResumeItem[] }>("/api/resumes");
+}
+
+export function apiCreateResume(title: string) {
+  return apiPost<{ ok: boolean; resume: ResumeItem }>("/api/resumes", { title });
+}
+
+export function apiGetResume(id: number) {
+  return apiGet<{ ok: boolean; resume: ResumeItem }>(`/api/resumes/${id}`);
+}
+
+export function apiUpdateResume(id: number, patch: { title?: string; slug?: string; data?: unknown }) {
+  return apiPut<{ ok: boolean; resume: ResumeItem }>(`/api/resumes/${id}`, patch);
+}
+
+export function apiPublishResume(id: number, isPublic: boolean) {
+  return apiPost<{ ok: boolean; resume: ResumeItem }>(`/api/resumes/${id}/publish`, { isPublic });
+}
+
+export function apiDeleteResume(id: number) {
+  return apiDelete<{ ok: boolean }>(`/api/resumes/${id}`);
+}
+
+// ---- public ----
+export interface PublicResumePayload {
+  ok: boolean;
+  resume: {
+    slug: string;
+    title: string;
+    data: ResumeData;
+    updatedAt: string;
+    owner: {
+      displayName: string;
+      themeId: number | null;
+      theme: { id: number; name: string; tokens: Record<string, string> } | null;
+    };
+  };
+}
+
+export function apiGetPublicResume(slug: string) {
+  return apiGet<PublicResumePayload>(`/api/public/resumes/${slug}`);
 }

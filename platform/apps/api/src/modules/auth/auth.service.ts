@@ -63,7 +63,7 @@ export async function registerUser(input: {
       email: input.email,
       passwordHash,
       displayName: input.username,
-      themeId: null,
+      themeId: 1, // 默认主题：memphis（seed 保证 id=1 存在）
     })
     .returning();
   if (!row) throw new Error("注册失败：未返回用户记录");

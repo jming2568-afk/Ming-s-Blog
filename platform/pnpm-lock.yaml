@@ -23,6 +23,9 @@ importers:
       '@platform/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@platform/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -104,7 +107,18 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
-  packages/ui: {}
+  packages/ui:
+    dependencies:
+      '@platform/shared':
+        specifier: workspace:*
+        version: link:../shared
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.18
 
 packages:
 

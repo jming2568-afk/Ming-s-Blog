@@ -3,7 +3,12 @@ import { cors } from "hono/cors";
 import { loadConfig } from "./config.js";
 import { getDb } from "./db/index.js";
 import { createAuthRoutes } from "./modules/auth/auth.routes.js";
+import { createResumeRoutes } from "./modules/resumes/resume.routes.js";
+import { createPublicRoutes } from "./modules/public/public.routes.js";
+import { createUserRoutes } from "./modules/users/user.routes.js";
+import { createThemeRoutes } from "./modules/themes/theme.routes.js";
 import { authOptional } from "./middleware/auth.js";
+import type { AppVariables } from "./types.js";
 
 /** 统一响应错误结构：{ ok:false, error: string } */
 export function jsonError(message: string, status = 400): Response {
@@ -15,7 +20,7 @@ export function jsonError(message: string, status = 400): Response {
 
 export function createApp() {
   const config = loadConfig();
-  const app = new Hono<{ Variables: { config: typeof config; user: unknown } }>();
+  const app = new Hono<{ Variables: AppVariables }>();
 
   app.use("*", cors({ origin: config.corsOrigins, credentials: true }));
   app.use("*", async (c, next) => {
@@ -45,6 +50,18 @@ export function createApp() {
 
   // ---- 认证模块（P2）----
   app.route("/api/auth", createAuthRoutes(config));
+
+  // ---- 简历模块（P3）----
+  app.route("/api/resumes", createResumeRoutes());
+
+  // ---- 用户资料（P3：主题选择）----
+  app.route("/api/users", createUserRoutes());
+
+  // ---- 主题列表（P3）----
+  app.route("/api/themes", createThemeRoutes());
+
+  // ---- 公共接口（P3：分享页数据源）----
+  app.route("/api/public", createPublicRoutes());
 
   // ---- 404 ----
   app.notFound((c) => jsonError("接口不存在", 404));

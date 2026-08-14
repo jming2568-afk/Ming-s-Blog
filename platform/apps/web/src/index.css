@@ -19,3 +19,34 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
 }
+
+/* ===== 打印一致性（一致性内核）：@media print 只保留简历主体 ===== */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .print-area > div {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  .resume-view {
+    color: #111 !important;
+  }
+  .resume-section {
+    break-inside: avoid;
+  }
+}

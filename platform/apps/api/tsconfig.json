@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "lib": ["ES2022"],
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react-jsx"
   },
   "include": ["src", "tsup.config.ts", "drizzle.config.ts"]
 }

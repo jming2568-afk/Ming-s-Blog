@@ -2,12 +2,15 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { runMigrations } from "./db/migrate.js";
+import { seedSystemThemes } from "./db/seed.js";
 
 const config = loadConfig();
 
 async function main() {
   // 启动时执行迁移（无 DATABASE_URL 时自动跳过）
   await runMigrations();
+  // 种子：5 套系统主题（幂等）
+  await seedSystemThemes();
 
   const app = createApp();
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
