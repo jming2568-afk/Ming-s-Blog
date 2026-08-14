@@ -20,12 +20,6 @@ importers:
       '@hono/node-server':
         specifier: ^1.16.0
         version: 1.19.17(hono@4.13.2)
-      '@platform/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@platform/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -51,6 +45,12 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@platform/shared':
+        specifier: file:../../packages/shared
+        version: link:../../packages/shared
+      '@platform/ui':
+        specifier: file:../../packages/ui
+        version: file:packages/ui(react@19.2.8)
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -947,6 +947,11 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@platform/ui@file:packages/ui':
+    resolution: {directory: packages/ui, type: directory}
+    peerDependencies:
+      react: ^19.2.0
 
   '@rolldown/pluginutils@1.0.0-rc.3':
     resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
@@ -2958,6 +2963,11 @@ snapshots:
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
+
+  '@platform/ui@file:packages/ui(react@19.2.8)':
+    dependencies:
+      '@platform/shared': link:packages/shared
+      react: 19.2.8
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
 

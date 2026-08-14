@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.16.0",
-    "@platform/shared": "workspace:*",
-    "@platform/ui": "workspace:*",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.2.0",
     "docx": "^9.3.0",
@@ -25,6 +23,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@platform/shared": "file:../../packages/shared",
+    "@platform/ui": "file:../../packages/ui",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.0",
     "@types/pdf-parse": "^1.1.5",
