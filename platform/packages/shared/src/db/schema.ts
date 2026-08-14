@@ -9,7 +9,9 @@ import {
 /**
  * 数据模型（TECH-001：PostgreSQL → SQLite，Drizzle ORM 保留）。
  * 字段名/表名/业务语义与 PG 版完全一致，仅方言变化：
- *   serial → integer autoIncrement；jsonb → text(mode:json)；timestamp → integer(mode:timestamp)
+ *   serial → integer autoIncrement；jsonb → text(mode:json)；timestamp → integer(mode:timestamp_ms)
+ *  ⚠️ 时间戳统一用 timestamp_ms（毫秒）：drizzle-kit 的 defaultNow() 生成毫秒默认值，
+ *     mode:"timestamp"(秒) 会与 DB 默认值单位不一致，导致日期显示为 58589 年。见 OPS-001 部署记录。
  */
 
 /** 用户表 */
@@ -24,8 +26,8 @@ export const users = sqliteTable(
     avatarUrl: text("avatar_url"),
     themeId: integer("theme_id"),
     role: text("role").notNull().default("user"), // user | admin
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().defaultNow(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
   },
   (t) => ({
     usernameIdx: uniqueIndex("users_username_idx").on(t.username),
@@ -42,8 +44,8 @@ export const sessions = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
   },
   (t) => ({
     tokenIdx: uniqueIndex("sessions_token_idx").on(t.tokenHash),
@@ -63,9 +65,9 @@ export const resumes = sqliteTable(
     slug: text("slug").notNull(),
     data: text("data", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
     isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
-    publishedAt: integer("published_at", { mode: "timestamp" }),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().defaultNow(),
+    publishedAt: integer("published_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
   },
   (t) => ({
     slugIdx: uniqueIndex("resumes_slug_idx").on(t.slug),
@@ -82,7 +84,7 @@ export const resumeVersions = sqliteTable(
       .notNull()
       .references(() => resumes.id, { onDelete: "cascade" }),
     data: text("data", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
   },
   (t) => ({
     resumeIdx: index("resume_versions_resume_idx").on(t.resumeId),
@@ -95,7 +97,7 @@ export const themes = sqliteTable("themes", {
   name: text("name").notNull(),
   tokens: text("tokens", { mode: "json" }).$type<Record<string, string>>().notNull().default({}),
   isSystem: integer("is_system", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
 });
 
 /** 媒体表（OSS 对象登记，P4 启用） */
@@ -110,7 +112,7 @@ export const media = sqliteTable(
     url: text("url").notNull(),
     mime: text("mime").notNull(),
     size: integer("size").notNull().default(0),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().defaultNow(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
   },
   (t) => ({
     userIdx: index("media_user_idx").on(t.userId),
@@ -121,5 +123,5 @@ export const media = sqliteTable(
 export const appSettings = sqliteTable("app_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
 });
