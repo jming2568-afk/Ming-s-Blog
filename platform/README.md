@@ -14,6 +14,7 @@
 | `docs/03-tech/` | 技术方案（TECH-001 低内存原生部署架构） |
 | `docs/04-ops/` | 部署运维（OPS-001 部署与更新手册） |
 | `docs/05-decisions/` | 决策记录 ADR（待建） |
+| `docs/06-api/` | API 接口契约（API-001 总则 + 按域拆分） |
 
 **文档管理规范**：每篇文档带 YAML frontmatter（id/status/created/updated/owner），生命周期 draft → review → active → superseded/archived（渐进式）。模板见 `docs/TEMPLATE.md`。改文档后运行：
 

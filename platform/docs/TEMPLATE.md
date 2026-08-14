@@ -61,3 +61,4 @@ superseded-by:
 | `docs/03-tech/` | 技术方案、架构、选型 | `TECH-*` |
 | `docs/04-ops/` | 部署、运维、备份手册 | `OPS-*` |
 | `docs/05-decisions/` | 决策记录（ADR） | `DEC-*` |
+| `docs/06-api/` | API 接口契约（按域拆分） | `API-*` |

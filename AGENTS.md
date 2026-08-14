@@ -1,97 +1,83 @@
-# AGENTS.md — 李佳铭个人博客（Ming-s-Blog）
+# AGENTS.md — 智能体工作规则（Ming-s-Blog）
 
-> 本文件由 DeepSeek Harness 自动加载（AGENTS.md 兼容格式），为在本仓库工作的智能体提供项目导航与关键约束。它不覆盖系统提示词与用户的直接指令；更具体的规则优先于笼统规则。
+> 本文件由 Harness 自动加载（AGENTS.md 兼容格式），**仅存放智能体在本仓库工作时的规则与约束**。项目介绍、架构、部署等事实性内容见 `README.md`；不覆盖系统提示词与用户的直接指令，更具体的规则优先于笼统规则。
 
-## ⚠️ 版本状态与分支策略（重要）
+## 文档索引
 
-- **当前根目录代码 = V0.02（Vercel 专用版），已冻结发布（tag `v0.2.0`）。**
-- **main 分支 = V0.02 冻结版，是 Vercel 生产部署分支**——任何 V0.03 内容**不得**合并/推送到 main，否则会触发生产部署并破坏"冻结"语义。
-- 根目录只允许文档性改动；**不要**对根目录做业务功能开发或架构调整。
-- **V0.03（简历公开平台：用户注册 → 编辑简历 → 专属链接展示 → 导出/打印，Linux 原生部署·无 Docker·低内存 2C1G 方案）开发全部在 `v0.3` 分支**，代码位于 `platform/` 目录（文档库入口 `platform/docs/INDEX.md`；架构见 `platform/docs/03-tech/TECH-001.md`，部署/更新见 `platform/docs/04-ops/OPS-001.md`）。V0.03 就绪后通过 PR/切换流程合入 main。
-- 本文件描述的是 V0.02 项目本身。
+| 文档 | 内容 |
+|---|---|
+| `README.md` | 项目全景：背景、功能、技术栈、架构、部署、使用、贡献指南 |
+| `docs/API契约.md` | **仅覆盖 V0.02**（根目录 Next.js 应用）的 HTTP API 接口契约（修改 V0.02 API 的必读文档） |
+| `platform/docs/INDEX.md` | V0.03 文档库入口（PRD / PLAN / TECH / OPS / API） |
+| `platform/docs/06-api/API-001-契约总则.md` | **仅覆盖 V0.03**（`platform/apps/api` Hono 服务）的 API 契约总则，按域拆分为 API-001~006 |
+| `platform/docs/03-tech/TECH-001.md` | V0.03 架构决策 |
+| `platform/docs/04-ops/OPS-001.md` | V0.03 部署与更新流程 |
 
-## 项目定位（V0.02）
+> ⚠️ **版本区分（勿混淆）**：本仓库存在两套完全独立的 API——**V0.02**（根目录 Next.js `app/api/*`，契约见 `docs/API契约.md`）与 **V0.03**（`platform/apps/api` 的 Hono 服务，契约见 `platform/docs/06-api/`，入口 API-001）。两者技术栈、路由、鉴权均不同，禁止跨版本套用契约或修改指引。
 
-个人作品集网站：AIGC 漫剧制片 / 全栈开发工程师，Memphis 复古设计。公开页面：首页、`/resume`（AIGC/全栈双版简历，可打印）、`/portfolio`（漫剧+开发分类筛选）、`/contact`；`/settings` 为登录后的在线内容管理。
-
-## 铁律（务必遵守）
+## 行为铁律（最高优先级）
 
 1. **Trae 的新页面设计是地基，必须保留**——只能改"页面编辑与数据存储方式"，绝不把页面回退成初始版本，不重写设计系统组件。
 2. **存储 = Vercel Blob 单文档**（`lib/store.js`，content.json）；禁止引入数据库/本地持久化（`data/content.local.json` 仅本地无 token 时降级，已 gitignore）。
 3. **保存即生效**：公开页服务端动态渲染（`force-dynamic`）+ 客户端 fetch，禁止把内容烤进构建产物。
-4. **任务前必做 PRD 环节**：任何任务开始前，先根据上下文与用户输入**推断用户意图** → 润色补充（澄清歧义、补全必要信息）→ 输出「推测意图简述」→ **等待用户确认后，才能进入构建/执行环节**。
+4. **任务前必做 PRD 环节**：见「决策流程与交互协议」。
 
-## 技术栈与关键文件
+## 决策流程与交互协议
 
-- Next.js 16.2.6（App Router + Turbopack）、React 19.2.4、Tailwind v4（`app/globals.css`：`@import "tailwindcss"` + `@theme`，无 tailwind.config）、framer-motion、react-icons、clsx、tailwind-merge
-- jose（JWT，`AUTH_SECRET`）、bcryptjs、`@vercel/blob` 2.8
-- `jsconfig.json`：`@/*` → 项目根
-- 目录：`app/`（页面 + API 路由）、`components/`（含 Memphis 设计系统 + 编辑 UI）、`lib/`（存储/认证/业务）、`data/`（种子数据）、`public/images/`、`.trae/documents/`（历史方案文档）、`docs/`（已过期开发指南）
+- **任务启动前**：根据上下文与用户输入**推断用户意图** → 润色补充（澄清歧义、补全必要信息）→ 输出「推测意图简述」→ **等待用户确认后，才能进入构建/执行环节**。
+- **方案分歧时**：存在多种合理方案（视觉/架构/技术选型）必须列出选项、说明取舍并给出推荐，交由用户决策，不擅自拍板。
+- **执行过程中**：关键节点简短汇报进展；遇到错误或阻塞立即上报，附原因分析与替代方案，不盲目重试同一动作。
+- **改动范围**：只做任务要求的事，不擅自扩大范围；与任务无关的"顺手改进"一律不做。
+- **任务完成时**：给出验证结果摘要（构建/回归结论），未验证不得宣称完成。
 
-## 数据与存储架构
+## 分支与版本操作规则
 
-- 单文档 `content.json`：`{version, admin, loginFailures, settings, resume, projects}`
-- `lib/store.js`：`getDoc()`（读：Blob → 本地文件 → 内存种子；任何存储异常不抛错，站点照常渲染）、`updateDoc(mutator)`（读-改-写整体落盘，返回 mutator 结果）；content.json 写入带 `allowOverwrite`；内存缓存 2s TTL（页面渲染与 API 路由是独立 bundle，缓存不能永久化，否则保存后另一侧读旧值）
-- `lib/settings.js`：`getSiteSettings/getResumeData/updateSiteSettings/updateResumeData/validateResume`（`aigc` 需 title/summary/workExperience/education/certs + works|abilities；`dev` 需 title/summary + projects|techStack）
-- `lib/projects.js`：list（featured 降序、id 降序）/getById/create（自增 id）/update/delete/slugExists
-- `lib/users.js`：`getAdmin/findAdminByUserId/checkPassword/getBanState/recordFailure/clearFailures`（3 次失败/5 分钟 → 5 分钟封禁，翻倍，上限 2h）
-- `lib/auth.js`（勿改）：jose HS256 + `ensureSecret()`（**生产必须显式设置 AUTH_SECRET**，否则报 `服务初始化失败：[auth] 生产环境必须显式设置 AUTH_SECRET...`）；`createSession/getCurrentUser/clearSessionCookie`
-- 种子数据：`data/*.js` 仅首次初始化；之后以 Blob content.json 为准
+- `main` = V0.02 冻结版 + Vercel 生产分支，**推送即生产部署**：任何 V0.03 内容不得合并/推送到 main。
+- 根目录只允许文档性改动；**不得**对根目录做业务功能开发或架构调整。
+- V0.03 开发全部在 `v0.3` 分支的 `platform/` 目录进行，就绪后走 PR/切换流程合入 main。
 
-## API 契约（返回 `{ok:true,...}` 或 `{error}` + 状态码）
+## 任务执行标准
 
-| 路由 | 方法 | 说明 |
-|---|---|---|
-| `/api/auth/login` | POST | `{username,password}` → `{ok,user}`；401 带 attemptsLeft/封禁提示；rate limit |
-| `/api/auth/logout` | POST | 清 cookie |
-| `/api/auth/session` | GET | `{isLoggedIn,user?}` |
-| `/api/settings` | GET/PUT | GET `{ok,settings,resume}`；PUT 白名单键 → `{ok,settings}`；需登录 |
-| `/api/settings/password` | PUT | `{oldPassword,newPassword}`；需登录 |
-| `/api/settings/resume` | PUT | `{resume}` → `{ok,resume}`；需登录 |
-| `/api/projects` | GET/POST | POST `{title,category:manga\|dev,...}` 自动生成 slug；需登录 |
-| `/api/projects/[id]` | GET/PUT/DELETE | **Next 16：`params` 是 Promise，须 `await params`** |
-| `/api/upload` | POST | multipart；需登录；无 `BLOB_READ_WRITE_TOKEN` 返回明确 500；图片≤8MB/视频≤100MB（Vercel Hobby 函数体约 4.5MB 限制，大视频先压缩） |
+### 验证流程（改完代码必做）
 
-## 认证与管理员
+1. `npm run build` + `npm run start` 启动生产模式
+2. 构建产物检查：所有路由应显示 `ƒ (Dynamic)`
+3. curl 功能回归，按序覆盖：登录 → 改设置 → 验证首页 footer 实时生效 → 项目 CRUD → 改密 → 上传守卫
+4. 修改 V0.02 API 的任务：对照 `docs/API契约.md` 逐项核对契约未被破坏，并同步更新契约文档（V0.03 API 不适用此文档，见文档索引「版本区分」）
 
-- 默认 `useradmin / useradmin123`（首次初始化，可用 `INIT_ADMIN_USERNAME/PASSWORD` 覆盖；`/settings` 登录后立即改密）
-- bcrypt 哈希存于公开 content.json——已知权衡，务必强密码
-- 客户端：`AuthContext.jsx`（登录态）、`LoginModal.jsx`、`lib/settingsStore.js`/`lib/projectsStore.js`（30s 内存缓存）
-
-## 常用命令（Windows + 沙箱）
+### 命令规范（Windows + 沙箱环境）
 
 ```bash
-# 开发
-npm run dev                 # 或 managed node：node.exe node_modules/next/dist/bin/next dev
-# 构建/生产（E2E 验证用）
-npm run build && npm run start
+# 开发（沙箱内用 managed node 启动）
+node.exe node_modules/next/dist/bin/next dev
+
 # 沙箱内 npm（npm 缓存写入受限时）
 cmd /c "node.exe node_modules/npm/bin/npm-cli.js install --cache node_modules\.npm-cache --no-audit --no-fund 1>log 2>&1"
 ```
 
-构建后所有路由应显示 `ƒ (Dynamic)`；改完代码跑 `next build` + `next start` + curl 回归（登录 → 改设置 → 验证首页 footer 实时生效 → 项目 CRUD → 改密 → 上传守卫）。
+- 本地测试 curl POST JSON：用单引号 `-d '{"password":"..."}'`（反斜杠转义会破坏 JSON）。
 
-## 服务器（VPS）信息
+## 代码修改红线
 
-- **登录命令：`ssh shouer`**（`~/.ssh/config` 已配置；密钥 `~/.ssh/首尔.pem`）
-  - 主机 `47.80.27.242`（阿里云 ECS · 首尔 ap-northeast-2），`root@22`
-  - 规格 `ecs.e-c2m1.large`（2C1G，可用 ~700MB，**暂不可升级**）+ **4G swap** 兜底
-  - Debian 12；已装 nginx / Node 22 / pnpm / sqlite3；**无 Docker（有意为之，省内存）**
-- **V0.03 部署目标**：`/opt/resume-platform`（地基已铺：systemd unit `resume-api` + nginx 站点 `resume.conf` 已就位，`User=resume`，服务待应用发布后启用）
-- **更新机制**：本地构建 → tar/scp 直传 → 服务器 `npm install --omit=dev`（better-sqlite3 原生模块须在 Linux 上安装）→ 重启。详见 `platform/docs/04-ops/OPS-001.md`
-- **架构决策**：SQLite + 客户端 PDF + 阿里云 OSS（媒体）；详见 `platform/docs/03-tech/TECH-001.md`
+- **勿改 `lib/auth.js`**：不得移除/绕过 `ensureSecret()` 守卫；生产缺 `AUTH_SECRET` 报错是预期行为，修复方式是配置环境变量，不是改代码。
+- **勿动 `node_modules/` 与 `.next/`** 内的任何东西。
+- **勿建 `tailwind.config.js`**：Tailwind v4 主题在 `app/globals.css` 的 `@theme`。
+- framer-motion 组件必须 `"use client"`。
+- Next.js 16 动态路由 handler 的 `params` 是 Promise：`const { id } = await params`，`params?.id` 会得 undefined。
+- 服务端读内容（Footer/contact 等）必须 `async + await + force-dynamic`，否则把旧数据烤进构建产物。
+- `lib/store.js` 内存缓存（2s TTL）不能改成永久化：页面渲染与 API 路由是独立 bundle，永久缓存会导致保存后另一侧读旧值。
+- 保持 `getDoc()` 容错语义：任何存储异常不得抛出到页面渲染层，站点必须照常渲染。
 
-## 部署（Vercel）
+## 错误处理与常见坑
 
-- 环境变量：`AUTH_SECRET`（`openssl rand -hex 32`，**生产必配**）、`BLOB_READ_WRITE_TOKEN`（**生产必配**，Store 必须 Public Access）、可选 `INIT_ADMIN_USERNAME/PASSWORD`
-- 内容编辑保存在 `/settings`，无需重新部署；推送 main 自动部署
-- 详细部署指引见 `README.md`
+- 生产报 `服务初始化失败：[auth] 生产环境必须显式设置 AUTH_SECRET...` → 检查 Vercel 环境变量，勿改代码。
+- 上传接口返回 500 且提示缺 token → `BLOB_READ_WRITE_TOKEN` 未配置，属预期守卫行为。
+- Vercel Hobby 函数请求体约 4.5MB 上限：大视频上传失败先压缩，而非调大限制。
+- 命令连续失败（权限/缓存受限）→ 改用「命令规范」中的沙箱命令形式，仍失败则上报用户。
 
-## 常见坑
+## 部署与运维协作规则
 
-- Next 16 动态路由 handler 的 `params` 是 Promise（`const { id } = await params`），`params?.id` 会得 undefined
-- framer-motion 组件必须 `"use client"`
-- Tailwind v4：不要建 tailwind.config.js；主题在 globals.css `@theme`
-- 服务端读内容（Footer/contact）必须 `async + await + force-dynamic`，否则把旧数据烤进构建产物
-- 本地测试 curl POST JSON：用单引号 `-d '{"password":"..."}'`（反斜杠转义会破坏 JSON）
-- 不要在 node_modules/.next 里改东西；不要动 `lib/auth.js` 的 ensureSecret 守卫
+- **main 分支操作需用户明确指令**：推送/合并到 main 即触发 Vercel 生产部署。
+- **V0.03 服务器操作**：VPS 登录 `ssh shouer`（服务器详情见 `README.md`「部署指南」）；部署、更新、回滚严格遵循 `platform/docs/04-ops/OPS-001.md`，不得自创流程。
+- better-sqlite3 等原生模块必须在 Linux 服务器上执行 `npm install --omit=dev` 安装，不得上传本地编译产物。
+- 生产环境变量（`AUTH_SECRET` / `BLOB_READ_WRITE_TOKEN`）的配置与轮换须经用户确认。
