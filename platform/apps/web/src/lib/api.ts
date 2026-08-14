@@ -161,3 +161,38 @@ export interface PublicResumePayload {
 export function apiGetPublicResume(slug: string) {
   return apiGet<PublicResumePayload>(`/api/public/resumes/${slug}`);
 }
+
+// ---- media ----
+export interface MediaResult {
+  ok: boolean;
+  media: { key: string; url: string; mime: string; size: number };
+}
+
+export async function apiUploadMedia(file: File): Promise<MediaResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/media", { method: "POST", credentials: "include", body: form });
+  const body = (await res.json().catch(() => ({}))) as MediaResult & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `上传失败 (${res.status})`);
+  return body;
+}
+
+// ---- export ----
+export function apiExportPdf(slug: string) {
+  return apiGet<ArrayBuffer>(`/api/export/pdf/${slug}`).then((buf) => new Blob([buf as ArrayBuffer], { type: "application/pdf" }));
+}
+
+export function apiExportWord(slug: string) {
+  return apiGet<ArrayBuffer>(`/api/export/word/${slug}`).then(
+    (buf) => new Blob([buf as ArrayBuffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+  );
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

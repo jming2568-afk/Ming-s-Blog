@@ -3,6 +3,7 @@ import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { runMigrations } from "./db/migrate.js";
 import { seedSystemThemes } from "./db/seed.js";
+import { getStorage } from "./storage.js";
 
 const config = loadConfig();
 
@@ -11,6 +12,12 @@ async function main() {
   await runMigrations();
   // 种子：5 套系统主题（幂等）
   await seedSystemThemes();
+  // 存储：确保 bucket 存在（配置了 STORAGE_* 时）
+  try {
+    await getStorage()?.ensureBucket?.();
+  } catch (err) {
+    console.warn("[storage] bucket 初始化失败:", (err as Error)?.message);
+  }
 
   const app = createApp();
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {

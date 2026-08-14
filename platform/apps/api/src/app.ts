@@ -7,6 +7,8 @@ import { createResumeRoutes } from "./modules/resumes/resume.routes.js";
 import { createPublicRoutes } from "./modules/public/public.routes.js";
 import { createUserRoutes } from "./modules/users/user.routes.js";
 import { createThemeRoutes } from "./modules/themes/theme.routes.js";
+import { createMediaRoutes } from "./modules/media/media.routes.js";
+import { createExportRoutes } from "./modules/export/export.routes.js";
 import { authOptional } from "./middleware/auth.js";
 import type { AppVariables } from "./types.js";
 
@@ -62,6 +64,12 @@ export function createApp() {
 
   // ---- 公共接口（P3：分享页数据源）----
   app.route("/api/public", createPublicRoutes());
+
+  // ---- 媒体上传（P4）----
+  app.route("/api/media", createMediaRoutes());
+
+  // ---- 导出（P4：PDF / Word）----
+  app.route("/api/export", createExportRoutes({ pdfServiceUrl: config.pdfServiceUrl }));
 
   // ---- 404 ----
   app.notFound((c) => jsonError("接口不存在", 404));

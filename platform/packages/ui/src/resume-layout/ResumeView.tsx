@@ -57,20 +57,30 @@ export function ResumeView({ data }: { data: ResumeData }) {
   return (
     <article className="resume-view" style={{ color: "var(--color-text)", fontSize: "14px" }}>
       {/* 头部 */}
-      <header className="resume-header" style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: 800, margin: 0, letterSpacing: "0.02em" }}>
-          {basic.name || "你的名字"}
-        </h1>
-        {basic.title ? (
-          <p style={{ margin: "6px 0 0", fontSize: "15px", color: "var(--color-primary)", fontWeight: 600 }}>
-            {basic.title}
-          </p>
+      <header className="resume-header" style={{ marginBottom: "20px", display: "flex", gap: "16px", alignItems: "flex-start" }}>
+        {basic.avatarUrl ? (
+          <img
+            src={basic.avatarUrl}
+            alt="头像"
+            className="resume-avatar"
+            style={{ width: 72, height: 72, borderRadius: "var(--radius)", objectFit: "cover", border: `2px solid var(--color-border)` }}
+          />
         ) : null}
-        {(basic.email || basic.phone || basic.location) && (
-          <p className="resume-contact" style={{ margin: "8px 0 0", fontSize: "12.5px", color: "var(--color-muted)" }}>
-            {[basic.email, basic.phone, basic.location].filter(Boolean).join(" · ")}
-          </p>
-        )}
+        <div>
+          <h1 style={{ fontSize: "26px", fontWeight: 800, margin: 0, letterSpacing: "0.02em" }}>
+            {basic.name || "你的名字"}
+          </h1>
+          {basic.title ? (
+            <p style={{ margin: "6px 0 0", fontSize: "15px", color: "var(--color-primary)", fontWeight: 600 }}>
+              {basic.title}
+            </p>
+          ) : null}
+          {(basic.email || basic.phone || basic.location) && (
+            <p className="resume-contact" style={{ margin: "8px 0 0", fontSize: "12.5px", color: "var(--color-muted)" }}>
+              {[basic.email, basic.phone, basic.location].filter(Boolean).join(" · ")}
+            </p>
+          )}
+        </div>
       </header>
 
       {/* 简介 */}

@@ -11,7 +11,19 @@ import {
   type SkillItem,
 } from "@platform/shared";
 import { ResumeView } from "@platform/ui";
-import { apiGetResume, apiGetThemes, apiPublishResume, apiUpdateMe, apiUpdateResume, type ThemeItem } from "../lib/api.js";
+import QRCode from "qrcode";
+import {
+  apiExportPdf,
+  apiExportWord,
+  apiGetResume,
+  apiGetThemes,
+  apiPublishResume,
+  apiUpdateMe,
+  apiUpdateResume,
+  apiUploadMedia,
+  downloadBlob,
+  type ThemeItem,
+} from "../lib/api.js";
 
 // ---------- 通用表单小组件 ----------
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -94,6 +106,9 @@ export function ResumeEditor() {
   const [publicLink, setPublicLink] = useState("");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [justPublished, setJustPublished] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 加载简历 + 主题
@@ -176,6 +191,7 @@ export function ResumeEditor() {
       setPublished(true);
       setPublicLink(`${window.location.origin}/r/${res.resume.slug}`);
       setPublishOpen(false);
+      setJustPublished(true);
     } catch (err) {
       alert(err instanceof Error ? err.message : "发布失败");
     } finally {
@@ -198,6 +214,45 @@ export function ResumeEditor() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
+  };
+
+  // 发布弹窗生成二维码
+  useEffect(() => {
+    if (!publishOpen || !slug) return;
+    void QRCode.toDataURL(`${window.location.origin}/r/${slug}`, { width: 160, margin: 1 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [publishOpen, slug]);
+
+  const exportPdf = async () => {
+    try {
+      const blob = await apiExportPdf(slug);
+      downloadBlob(blob, `${title}.pdf`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "PDF 导出失败");
+    }
+  };
+  const exportWord = async () => {
+    try {
+      const blob = await apiExportWord(slug);
+      downloadBlob(blob, `${title}.docx`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Word 导出失败");
+    }
+  };
+
+  // 头像上传
+  const onAvatarChange = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await apiUploadMedia(file);
+      setBasic({ avatarUrl: res.media.url });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      setUploading(false);
+    }
   };
 
   // 主题切换：本地预览 + 持久化
@@ -249,7 +304,7 @@ export function ResumeEditor() {
             已发布 · 下架
           </button>
         ) : (
-          <button onClick={() => setPublishOpen(true)} className="rounded px-4 py-1.5 text-sm font-bold" style={{ background: "var(--color-primary)", color: "#fff" }}>
+          <button onClick={() => { setJustPublished(false); setPublishOpen(true); }} className="rounded px-4 py-1.5 text-sm font-bold" style={{ background: "var(--color-primary)", color: "#fff" }}>
             发布
           </button>
         )}
@@ -259,7 +314,20 @@ export function ResumeEditor() {
             <button onClick={copyLink} className="rounded px-2 py-1" style={{ border: "1px solid var(--color-border)" }}>
               {copied ? "已复制 ✓" : "复制链接"}
             </button>
+            {published && (
+              <button onClick={() => void exportPdf()} className="rounded px-2 py-1" style={{ border: "1px solid var(--color-border)" }}>
+                下载 PDF
+              </button>
+            )}
+            <button onClick={() => void exportWord()} className="rounded px-2 py-1" style={{ border: "1px solid var(--color-border)" }}>
+              下载 Word
+            </button>
           </span>
+        )}
+        {!published && (
+          <button onClick={() => void exportWord()} className="rounded px-2 py-1 text-xs" style={{ border: "1px solid var(--color-border)" }}>
+            下载 Word（草稿）
+          </button>
         )}
       </div>
 
@@ -268,6 +336,24 @@ export function ResumeEditor() {
         {/* 左：编辑表单 */}
         <div>
           <Section title="基本信息">
+            <div className="flex items-center gap-4">
+              {data.basic.avatarUrl ? (
+                <img src={data.basic.avatarUrl} alt="头像" className="rounded" style={{ width: 64, height: 64, objectFit: "cover", border: "2px solid var(--color-border)" }} />
+              ) : (
+                <div className="flex items-center justify-center rounded" style={{ width: 64, height: 64, border: "2px dashed var(--color-border)", color: "var(--color-muted)", fontSize: "11px" }}>
+                  无头像
+                </div>
+              )}
+              <label className="cursor-pointer rounded px-3 py-1.5 text-sm" style={{ border: "1px solid var(--color-border)" }}>
+                {uploading ? "上传中…" : "上传头像"}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => void onAvatarChange(e.target.files?.[0])} />
+              </label>
+              {data.basic.avatarUrl && (
+                <button type="button" onClick={() => setBasic({ avatarUrl: "" })} className="text-xs" style={{ color: "var(--color-primary)" }}>
+                  移除
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="姓名" value={data.basic.name ?? ""} onChange={(v) => setBasic({ name: v })} placeholder="李佳铭" />
               <Field label="求职意向" value={data.basic.title ?? ""} onChange={(v) => setBasic({ title: v })} placeholder="全栈开发工程师" />
@@ -402,6 +488,32 @@ export function ResumeEditor() {
                 {busy ? "发布中…" : "确认发布"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 发布成功弹窗：链接 + 二维码 + 导出 */}
+      {justPublished && qrDataUrl && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setJustPublished(false)}>
+          <div className="w-full max-w-sm rounded-lg p-6 text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold">🎉 发布成功</h3>
+            <p className="mt-1 break-all text-xs" style={{ color: "var(--color-muted)" }}>{publicLink}</p>
+            {qrDataUrl && <img src={qrDataUrl} alt="二维码" className="mx-auto mt-4" style={{ width: 160, height: 160 }} />}
+            <p className="mt-1 text-xs" style={{ color: "var(--color-muted)" }}>扫码打开（可发给打印店老板直接打印）</p>
+            <div className="mt-4 flex justify-center gap-3">
+              <button onClick={copyLink} className="rounded px-4 py-2 text-sm font-bold" style={{ background: "var(--color-primary)", color: "#fff" }}>
+                {copied ? "已复制 ✓" : "复制链接"}
+              </button>
+              <button onClick={() => void exportPdf()} className="rounded px-4 py-2 text-sm" style={{ border: "1px solid var(--color-border)" }}>
+                下载 PDF
+              </button>
+              <button onClick={() => void exportWord()} className="rounded px-4 py-2 text-sm" style={{ border: "1px solid var(--color-border)" }}>
+                下载 Word
+              </button>
+            </div>
+            <button onClick={() => setJustPublished(false)} className="mt-4 text-xs" style={{ color: "var(--color-muted)" }}>
+              关闭
+            </button>
           </div>
         </div>
       )}

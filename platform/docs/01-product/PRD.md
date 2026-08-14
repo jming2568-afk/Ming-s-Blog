@@ -182,12 +182,12 @@ summary: V0.03 简历公开平台产品需求：创建/展示/交付三板块 + 
 
 | 项 | 要求 |
 |---|---|
-| 容量 | 20 人试运行；2C4G VPS；单 API 容器 + 单 PostgreSQL + TOS 对象存储 |
+| 容量 | 20 人试运行；2C1G 低内存 VPS（可用 ~700MB，无法升级）；原生部署：单 Node API + SQLite + 阿里云 OSS（见 TECH-001） |
 | 性能 | 公共页首屏 < 2s；编辑器保存 < 1s（防抖） |
 | 安全 | 密码 bcryptjs；会话可撤销；注册限流；CORS 白名单；LLM 密钥仅服务端 |
-| 部署 | Docker Compose（nginx + web 静态 + api + postgres）；GitHub Actions CI/CD |
-| 备份 | pg_dump 定时 + TOS 媒体 |
-| 镜像体量 | 自定义镜像压缩后 ≤ ~150MB（多阶段构建 + 生产依赖裁剪） |
+| 部署 | 原生部署：宿主机 nginx + systemd 单 Node API + SQLite + 客户端 PDF + 阿里云 OSS；GitHub Actions CI/CD（详见 TECH-001，替代原 Docker Compose） |
+| 备份 | SQLite 定时备份 + OSS 媒体（详见 TECH-001 §8） |
+| 镜像体量 | 生产不使用 Docker 镜像（原生部署）；本地/CI 若用 Docker，镜像 ≤ ~150MB 要求仍适用 |
 
 ---
 
@@ -212,17 +212,17 @@ summary: V0.03 简历公开平台产品需求：创建/展示/交付三板块 + 
 | 代码库 | 同仓库 `platform/` 目录（根 = V0.02 冻结），开发分支 `v0.3` |
 | 组织 | pnpm monorepo：`apps/web` + `apps/api` + `packages/shared` + `packages/ui` |
 | 前端 | Vite + React 19 SPA + React Router + TanStack Query + Tailwind v4 |
-| 后端 | Hono + @hono/node-server + Drizzle ORM + PostgreSQL 16 |
+| 后端 | Hono + @hono/node-server + Drizzle ORM + SQLite（better-sqlite3；原 PostgreSQL，见 TECH-001） |
 | 认证 | httpOnly cookie 会话（sessions 表，可撤销）+ bcryptjs |
-| 存储 | TOS（S3 兼容端点）封装在 `packages/shared/storage`，本地 MinIO 模拟 |
-| 部署 | Docker Compose + GitHub Actions |
+| 存储 | 阿里云 OSS（S3 兼容）封装在 `packages/shared/storage`；生产用 OSS 远端，本地开发可 MinIO 模拟（见 TECH-001） |
+| 部署 | 原生 systemd + 宿主机 nginx + GitHub Actions CI/CD（原 Docker Compose 已弃用，见 TECH-001） |
 
 ### 待定（默认值待执行时确认）
 | 项 | 推荐默认 |
 |---|---|
 | LLM 服务 | 火山方舟（ARK_API_KEY 已有，DeepSeek 模型） |
 | OCR 方式 | 多模态 LLM 直读（一次 OCR+结构化） |
-| PDF 生成 | Playwright 无头打印同源组件 |
+| PDF 生成 | 客户端浏览器打印（`window.print()` + `@media print`；原 Playwright 方案已取消，见 TECH-001） |
 | Word 导出 | docx 生成库 |
 | 商业模式 | 试运行期免费 + 可选邀请码 |
 

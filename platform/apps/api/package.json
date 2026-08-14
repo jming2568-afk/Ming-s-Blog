@@ -16,6 +16,7 @@
     "@platform/shared": "workspace:*",
     "@platform/ui": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "docx": "^9.3.0",
     "drizzle-orm": "^0.44.2",
     "hono": "^4.9.0",
     "postgres": "^3.4.5",

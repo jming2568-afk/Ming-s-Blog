@@ -4,6 +4,8 @@ export interface ApiConfig {
   databaseUrl: string;
   corsOrigins: string[];
   nodeEnv: string;
+  /** PDF 渲染服务地址（P4，apps/pdf） */
+  pdfServiceUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
@@ -18,5 +20,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return { port, databaseUrl, corsOrigins, nodeEnv: env.NODE_ENV ?? "development" };
+  return {
+    port,
+    databaseUrl,
+    corsOrigins,
+    nodeEnv: env.NODE_ENV ?? "development",
+    pdfServiceUrl: env.PDF_SERVICE_URL ?? "http://localhost:3210",
+  };
 }
