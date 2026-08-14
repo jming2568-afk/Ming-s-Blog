@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [v0.3, main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: platform/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: 文档索引校验
+        run: pnpm docs:check
+      - name: 类型检查
+        run: pnpm typecheck
+      - name: 单元测试
+        run: pnpm test
+      - name: 构建
+        run: pnpm build

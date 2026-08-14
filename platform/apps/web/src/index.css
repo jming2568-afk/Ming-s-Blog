@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* 主题令牌由 ThemeProvider 注入 :root（@platform/ui） */
+:root {
+  --color-primary: #e63946;
+  --color-bg: #fdf6ec;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-muted: #6b6b6b;
+  --color-accent: #007aff;
+  --color-border: #1a1a1a;
+  --font-family: "Trebuchet MS", "PingFang SC", sans-serif;
+  --radius: 0px;
+  --shadow: 6px 6px 0 rgba(26, 26, 26, 0.9);
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+}

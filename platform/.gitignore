@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+.pnpm-bootstrap/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+
+# test
+coverage/
+
+# drizzle
+.drizzle/
+
+# misc
+.DS_Store
+Thumbs.db
+*.log

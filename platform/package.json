@@ -5,6 +5,24 @@
   "description": "简历一站到底（V0.03）— 公开简历平台 monorepo",
   "scripts": {
     "docs:index": "node scripts/doc-index.mjs",
-    "docs:check": "node scripts/doc-index.mjs --check"
+    "docs:check": "node scripts/doc-index.mjs --check",
+    "dev": "pnpm -r --parallel --stream dev",
+    "dev:web": "pnpm --filter @platform/web dev",
+    "dev:api": "pnpm --filter @platform/api dev",
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @platform/web build",
+    "build:api": "pnpm --filter @platform/api build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
