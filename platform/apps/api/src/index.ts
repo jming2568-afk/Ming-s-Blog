@@ -14,7 +14,7 @@ async function main() {
   await seedSystemThemes();
   // 存储：确保 bucket 存在（配置了 STORAGE_* 时）
   try {
-    await getStorage()?.ensureBucket?.();
+    await (await getStorage())?.ensureBucket?.();
   } catch (err) {
     console.warn("[storage] bucket 初始化失败:", (err as Error)?.message);
   }

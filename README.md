@@ -59,6 +59,15 @@ npm run dev        # http://localhost:3000
 > 你最初遇到的 `[auth] 生产环境必须显式设置 AUTH_SECRET` 报错，原因就是 `AUTH_SECRET` 未配置到 Vercel 环境变量；配置后重新部署即消失。
 > 视频上传注意：Vercel Hobby 函数请求体上限约 4.5MB，单个视频请先压缩，或后续改用 Blob 客户端直传。
 
+## V0.03 简历公开平台（platform/）
+
+> 开发分支 `v0.3`，与根目录 V0.02 冻结版隔离；部署目标：VPS `ssh shouer`（阿里云首尔 2C1G，**原生部署，无 Docker**）。
+
+- 定位：用户注册 → 编辑/导入简历 → 专属链接展示 → 导出/打印（Word / PDF / 直接打印）
+- 技术栈：pnpm monorepo（`apps/web` Vite+React SPA + `apps/api` Hono）+ **SQLite**(Drizzle) + 阿里云 OSS + 客户端 PDF
+- 文档库：`platform/docs/INDEX.md`（PRD-001 / PLAN-001 / TECH-001 架构 / OPS-001 部署与更新）
+- 服务器信息、登录命令与更新流程见 `AGENTS.md`「服务器（VPS）信息」章节
+
 ## 说明
 
 - 联系方式仅公开邮箱与 GitHub，手机号/微信号在投递时单独提供以保护隐私

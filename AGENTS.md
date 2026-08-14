@@ -7,7 +7,7 @@
 - **当前根目录代码 = V0.02（Vercel 专用版），已冻结发布（tag `v0.2.0`）。**
 - **main 分支 = V0.02 冻结版，是 Vercel 生产部署分支**——任何 V0.03 内容**不得**合并/推送到 main，否则会触发生产部署并破坏"冻结"语义。
 - 根目录只允许文档性改动；**不要**对根目录做业务功能开发或架构调整。
-- **V0.03（简历公开平台：用户注册 → 编辑简历 → 专属链接展示 → 导出/打印，Linux + Docker 前后端分离）开发全部在 `v0.3` 分支**，代码位于 `platform/` 目录（文档库入口 `platform/docs/INDEX.md`，PRD 见 `platform/docs/01-product/PRD.md`）。V0.03 就绪后通过 PR/切换流程合入 main。
+- **V0.03（简历公开平台：用户注册 → 编辑简历 → 专属链接展示 → 导出/打印，Linux 原生部署·无 Docker·低内存 2C1G 方案）开发全部在 `v0.3` 分支**，代码位于 `platform/` 目录（文档库入口 `platform/docs/INDEX.md`；架构见 `platform/docs/03-tech/TECH-001.md`，部署/更新见 `platform/docs/04-ops/OPS-001.md`）。V0.03 就绪后通过 PR/切换流程合入 main。
 - 本文件描述的是 V0.02 项目本身。
 
 ## 项目定位（V0.02）
@@ -19,6 +19,7 @@
 1. **Trae 的新页面设计是地基，必须保留**——只能改"页面编辑与数据存储方式"，绝不把页面回退成初始版本，不重写设计系统组件。
 2. **存储 = Vercel Blob 单文档**（`lib/store.js`，content.json）；禁止引入数据库/本地持久化（`data/content.local.json` 仅本地无 token 时降级，已 gitignore）。
 3. **保存即生效**：公开页服务端动态渲染（`force-dynamic`）+ 客户端 fetch，禁止把内容烤进构建产物。
+4. **任务前必做 PRD 环节**：任何任务开始前，先根据上下文与用户输入**推断用户意图** → 润色补充（澄清歧义、补全必要信息）→ 输出「推测意图简述」→ **等待用户确认后，才能进入构建/执行环节**。
 
 ## 技术栈与关键文件
 
@@ -69,6 +70,16 @@ cmd /c "node.exe node_modules/npm/bin/npm-cli.js install --cache node_modules\.n
 ```
 
 构建后所有路由应显示 `ƒ (Dynamic)`；改完代码跑 `next build` + `next start` + curl 回归（登录 → 改设置 → 验证首页 footer 实时生效 → 项目 CRUD → 改密 → 上传守卫）。
+
+## 服务器（VPS）信息
+
+- **登录命令：`ssh shouer`**（`~/.ssh/config` 已配置；密钥 `~/.ssh/首尔.pem`）
+  - 主机 `47.80.27.242`（阿里云 ECS · 首尔 ap-northeast-2），`root@22`
+  - 规格 `ecs.e-c2m1.large`（2C1G，可用 ~700MB，**暂不可升级**）+ **4G swap** 兜底
+  - Debian 12；已装 nginx / Node 22 / pnpm / sqlite3；**无 Docker（有意为之，省内存）**
+- **V0.03 部署目标**：`/opt/resume-platform`（地基已铺：systemd unit `resume-api` + nginx 站点 `resume.conf` 已就位，`User=resume`，服务待应用发布后启用）
+- **更新机制**：本地构建 → tar/scp 直传 → 服务器 `npm install --omit=dev`（better-sqlite3 原生模块须在 Linux 上安装）→ 重启。详见 `platform/docs/04-ops/OPS-001.md`
+- **架构决策**：SQLite + 客户端 PDF + 阿里云 OSS（媒体）；详见 `platform/docs/03-tech/TECH-001.md`
 
 ## 部署（Vercel）
 

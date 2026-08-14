@@ -116,3 +116,10 @@ export const media = sqliteTable(
     userIdx: index("media_user_idx").on(t.userId),
   })
 );
+
+/** 平台配置表（配置中心：全量入库 + 敏感值 AES-GCM 加密，见 docs/03-tech） */
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().defaultNow(),
+});

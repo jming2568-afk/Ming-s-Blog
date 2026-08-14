@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { sessions, users } from "@platform/shared/db/schema";
 import { getDb } from "../../db/index.js";
+import { getAdminUsernames } from "../config/config.service.js";
 import { hashPassword, verifyPassword } from "./password.js";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
@@ -131,12 +132,9 @@ export class AuthError extends Error {
   }
 }
 
-/** 管理员角色同步：ADMIN_USERNAMES 环境变量中的用户自动提升为 admin（P5） */
+/** 管理员角色同步：ADMIN_USERNAMES（配置中心 DB > env）中的用户自动提升为 admin（P5） */
 export async function syncRoleIfAdmin(user: PublicUser): Promise<PublicUser> {
-  const admins = (process.env.ADMIN_USERNAMES ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const admins = await getAdminUsernames();
   if (!admins.includes(user.username) || user.role === "admin") return user;
   const db = getDb();
   if (!db) return user;

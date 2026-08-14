@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/auth.js";
 import type { AppVariables } from "../../types.js";
 import { RateLimiter } from "../auth/rate-limit.js";
-import { loadLlmConfig } from "./llm.js";
+import { getLlmConfig } from "../config/config.service.js";
 import { importResume, polishResumeText } from "./ai.service.js";
 
 const polishSchema = z.object({
@@ -25,7 +25,7 @@ export function createAiRoutes() {
     if (!aiLimiter.allow(`ai:${c.get("user")!.id}`)) {
       return c.json({ ok: false, error: "操作过于频繁，请稍后再试" }, 429);
     }
-    const config = loadLlmConfig();
+    const config = await getLlmConfig();
     if (!config) return c.json({ ok: false, error: "LLM 未配置（LLM_API_KEY/ARK_API_KEY），AI 能力不可用" }, 503);
 
     const parsed = polishSchema.safeParse(await c.req.json().catch(() => null));
@@ -57,7 +57,7 @@ export function createAiRoutes() {
       file.name.toLowerCase().endsWith(".docx");
     if (!allowed) return c.json({ ok: false, error: "仅支持图片（jpg/png/webp）、PDF 或 Word（docx）" }, 400);
 
-    const config = loadLlmConfig();
+    const config = await getLlmConfig();
     if (!config) return c.json({ ok: false, error: "LLM 未配置（LLM_API_KEY/ARK_API_KEY），AI 能力不可用" }, 503);
 
     try {

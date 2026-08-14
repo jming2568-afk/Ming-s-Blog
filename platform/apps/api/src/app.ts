@@ -11,6 +11,8 @@ import { createMediaRoutes } from "./modules/media/media.routes.js";
 import { createExportRoutes } from "./modules/export/export.routes.js";
 import { createAiRoutes } from "./modules/ai/ai.routes.js";
 import { createAdminRoutes } from "./modules/admin/admin.routes.js";
+import { createConfigRoutes } from "./modules/config/config.routes.js";
+import { getCorsOrigins } from "./modules/config/config.service.js";
 import { authOptional } from "./middleware/auth.js";
 import type { AppVariables } from "./types.js";
 
@@ -26,7 +28,18 @@ export function createApp() {
   const config = loadConfig();
   const app = new Hono<{ Variables: AppVariables }>();
 
-  app.use("*", cors({ origin: config.corsOrigins, credentials: true }));
+  // CORS（配置中心动态读取：DB > env）
+  app.use(
+    "*",
+    cors({
+      origin: async (origin) => {
+        if (!origin) return undefined; // 同源/无 Origin
+        const origins = await getCorsOrigins();
+        return origins.includes(origin) ? origin : undefined;
+      },
+      credentials: true,
+    })
+  );
   app.use("*", async (c, next) => {
     c.set("config", config);
     await next();
@@ -87,6 +100,9 @@ export function createApp() {
 
   // ---- 管理端（P5：admin 角色）----
   app.route("/api/admin", createAdminRoutes());
+
+  // ---- 配置中心（P5.5：全量入库 + 加密 + 面板）----
+  app.route("/api/admin/config", createConfigRoutes());
 
   // ---- 404 ----
   app.notFound((c) => jsonError("接口不存在", 404));

@@ -230,3 +230,46 @@ export interface AdminUser {
 export function apiAdminUsers() {
   return apiGet<{ ok: boolean; users: AdminUser[] }>("/api/admin/users");
 }
+
+// ---- 配置中心（P5.5）----
+export interface ConfigEntry {
+  key: string;
+  value: string;
+  sensitive: boolean;
+  source: "db" | "env" | "default";
+  configured: boolean;
+}
+
+export function apiGetAdminConfig() {
+  return apiGet<{ ok: boolean; masterKeyOk: boolean; config: ConfigEntry[] }>("/api/admin/config");
+}
+
+export function apiUpdateAdminConfig(config: Array<{ key: string; value: string }>) {
+  return apiPut<{ ok: boolean }>("/api/admin/config", { config });
+}
+
+export interface TestLlmResult {
+  ok: boolean;
+  latencyMs: number;
+  protocol: string;
+  model: string;
+  reply?: string;
+  error?: string;
+}
+
+export function apiTestLlm() {
+  return apiPost<TestLlmResult>("/api/admin/config/test-llm");
+}
+
+export interface TestStorageResult {
+  ok: boolean;
+  latencyMs: number;
+  endpoint?: string;
+  bucket?: string;
+  pathStyle?: boolean;
+  error?: string;
+}
+
+export function apiTestStorage() {
+  return apiPost<TestStorageResult>("/api/admin/config/test-storage");
+}

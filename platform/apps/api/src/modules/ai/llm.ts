@@ -147,6 +147,12 @@ function isProtocolMismatch(err: unknown): boolean {
 // 协议记忆缓存（key = baseUrl+model），避免每次失败重试
 const protocolCache = new Map<string, LlmProtocol>();
 
+// 最近一次成功解析的协议（管理面板展示用）
+let lastResolvedProtocol: LlmProtocol | null = null;
+export function lastProtocol(): LlmProtocol | null {
+  return lastResolvedProtocol;
+}
+
 function cacheKey(config: LlmConfig, model: string): string {
   return `${config.baseUrl}|${model}`;
 }
@@ -171,12 +177,14 @@ export async function chat(
   try {
     const result = await callOnce(config, primary, messages, { model, temperature, maxTokens: opts.maxTokens });
     protocolCache.set(key, result.protocol);
+    lastResolvedProtocol = result.protocol;
     return result.text;
   } catch (err) {
     if (config.protocol === "auto" && isProtocolMismatch(err)) {
       const fallback: LlmProtocol = primary === "responses" ? "chat" : "responses";
       const result = await callOnce(config, fallback, messages, { model, temperature, maxTokens: opts.maxTokens });
       protocolCache.set(key, result.protocol);
+      lastResolvedProtocol = result.protocol;
       return result.text;
     }
     throw err;

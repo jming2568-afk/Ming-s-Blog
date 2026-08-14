@@ -15,7 +15,7 @@ export function createMediaRoutes() {
   r.use("*", requireAuth);
 
   r.post("/", async (c) => {
-    const storage = getStorage();
+    const storage = await getStorage();
     if (!storage) {
       return c.json({ ok: false, error: "对象存储未配置：请设置 STORAGE_ENDPOINT / STORAGE_ACCESS_KEY_ID / STORAGE_SECRET_ACCESS_KEY / STORAGE_BUCKET" }, 500);
     }
