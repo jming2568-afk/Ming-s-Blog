@@ -1,6 +1,8 @@
 import { Link, Outlet } from "react-router-dom";
+import { useAuth } from "./AuthContext.js";
 
 export function Layout() {
+  const { user, logout } = useAuth();
   return (
     <div className="min-h-screen">
       <header className="border-b" style={{ borderColor: "var(--color-border)" }}>
@@ -8,10 +10,21 @@ export function Layout() {
           <Link to="/" className="font-bold">
             简历一站到底
           </Link>
-          <div className="flex gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm">
             <Link to="/app">工作台</Link>
-            <Link to="/login">登录</Link>
-            <Link to="/register">注册</Link>
+            {user ? (
+              <>
+                <span style={{ color: "var(--color-muted)" }}>{user.displayName ?? user.username}</span>
+                <button onClick={() => void logout()} style={{ color: "var(--color-primary)" }}>
+                  退出
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">登录</Link>
+                <Link to="/register">注册</Link>
+              </>
+            )}
           </div>
         </nav>
       </header>

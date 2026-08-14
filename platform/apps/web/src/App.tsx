@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout.js";
+import { RequireAuth } from "./components/RequireAuth.js";
 import { Landing } from "./pages/Landing.js";
 import { Login } from "./pages/Login.js";
 import { Register } from "./pages/Register.js";
@@ -16,7 +17,14 @@ export function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/app" element={<AppHome />} />
+        <Route
+          path="/app"
+          element={
+            <RequireAuth>
+              <AppHome />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

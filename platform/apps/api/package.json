@@ -7,11 +7,14 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate-cli.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.16.0",
     "@platform/shared": "workspace:*",
+    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.44.2",
     "hono": "^4.9.0",
     "postgres": "^3.4.5",

@@ -23,6 +23,9 @@ importers:
       '@platform/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
       drizzle-orm:
         specifier: ^0.44.2
         version: 0.44.7(postgres@3.4.9)
@@ -1153,6 +1156,10 @@ packages:
   baseline-browser-mapping@2.11.14:
     resolution: {integrity: sha512-JyJ954WzuIR8/FFzX0o5krdSTrBAkcCSRfWSleRsIHSWV+cZe2FI1PKggVkFke1hBldRs+LRxUczzE9iPmgZww==}
     engines: {node: '>=6.0.0'}
+    hasBin: true
+
+  bcryptjs@3.0.3:
+    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
     hasBin: true
 
   browserslist@4.28.8:
@@ -2544,6 +2551,8 @@ snapshots:
   assertion-error@2.0.1: {}
 
   baseline-browser-mapping@2.11.14: {}
+
+  bcryptjs@3.0.3: {}
 
   browserslist@4.28.8:
     dependencies:

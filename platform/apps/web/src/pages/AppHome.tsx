@@ -1,9 +1,12 @@
+import { useAuth } from "../components/AuthContext.js";
+
 export function AppHome() {
+  const { user } = useAuth();
   return (
     <div>
       <h1 className="text-2xl font-black">工作台</h1>
       <p className="mt-2 text-sm" style={{ color: "var(--color-muted)" }}>
-        P2 起：未登录访问重定向 /login；P3 起：简历列表 + 新建
+        欢迎，{user?.displayName ?? user?.username}（{user?.email}）
       </p>
       <div className="mt-6 rounded border-2 border-dashed p-8 text-center" style={{ borderColor: "var(--color-border)" }}>
         <p className="text-sm">暂无简历</p>

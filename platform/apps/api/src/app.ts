@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { loadConfig } from "./config.js";
 import { getDb } from "./db/index.js";
+import { createAuthRoutes } from "./modules/auth/auth.routes.js";
+import { authOptional } from "./middleware/auth.js";
 
 /** 统一响应错误结构：{ ok:false, error: string } */
 export function jsonError(message: string, status = 400): Response {
@@ -13,13 +15,15 @@ export function jsonError(message: string, status = 400): Response {
 
 export function createApp() {
   const config = loadConfig();
-  const app = new Hono<{ Variables: { config: typeof config } }>();
+  const app = new Hono<{ Variables: { config: typeof config; user: unknown } }>();
 
   app.use("*", cors({ origin: config.corsOrigins, credentials: true }));
   app.use("*", async (c, next) => {
     c.set("config", config);
     await next();
   });
+  // 可选认证：把当前用户挂到 context
+  app.use("*", authOptional);
 
   // 统一错误处理
   app.onError((err, c) => {
@@ -38,6 +42,9 @@ export function createApp() {
       db: db ? "configured" : "not-configured",
     });
   });
+
+  // ---- 认证模块（P2）----
+  app.route("/api/auth", createAuthRoutes(config));
 
   // ---- 404 ----
   app.notFound((c) => jsonError("接口不存在", 404));
