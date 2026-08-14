@@ -1,7 +1,17 @@
+---
+id: PRD-001
+title: 产品需求文档（简历一站到底）
+status: active
+created: 2026-08-14
+updated: 2026-08-15
+owner: ming
+summary: V0.03 简历公开平台产品需求：创建/展示/交付三板块 + 一致性内核 + 核心卖点
+---
+
 # PRD — 简历一站到底（V0.03）
 
 > 产品需求文档 · 简历公开平台（创建 · 展示 · 交付 一体化）
-> 状态：Draft v0.1 ｜ 更新：2026-08-14 ｜ 关联：V0.02（已冻结，Vercel 专用版）
+> 状态：active ｜ 更新：2026-08-15 ｜ 关联：V0.02（已冻结，Vercel 专用版）
 
 ---
 
@@ -91,7 +101,7 @@
 收到链接（或二维码）→ 打开 → 点打印 → A4 合格件交付，无需沟通排版
 ```
 
-### 4.4 平台侧（M5）
+### 4.4 平台侧（P5）
 ```
 /admin 管理员登录 → 用户列表（活跃/封禁）、简历列表（违规处理）
 ```
@@ -112,7 +122,7 @@
 ├── /app/resumes/:id/preview  # 全屏预览（发布前访客视角自查）
 └── /app/settings          # 个人设置：资料/头像/密码/默认主题
 
-管理侧（M5 可选）
+管理侧（P5 可选）
 └── /admin                 # 用户/内容管理
 ```
 
@@ -164,7 +174,7 @@
   - 打印（`@media print`，A4 分页）
   - PDF（服务端无头浏览器打印同源组件）
 - 验收硬指标：展示页与打印/PDF 输出**版式一致**（无交互元素、A4 分页正确、不换字体不回行错乱）。
-- 任何新增样式必须三端同时验证（M3 起纳入验收）。
+- 任何新增样式必须三端同时验证（P3 起纳入验收）。
 
 ---
 
@@ -185,12 +195,12 @@
 
 | 里程碑 | 范围 | 验收 |
 |---|---|---|
-| M1 骨架 | monorepo + web/api/shared/ui 空壳 + compose + 健康检查 + 测试骨架 | `/api/health` 通；web 构建过；compose 起三服务 |
-| M2 认证 | users/sessions 表 + 注册/登录/登出/会话中间件 | 注册→登录→登出全流程 |
-| M3 简历核心 | 编辑器 + 展示页 + 主题 + 打印样式 | 分栏编辑/自动保存/发布/`/r/:slug` 展示与打印版式一致 |
-| M4 交付 | PDF + Word 导出 + 二维码 | PDF 与展示页一致；docx 可编辑 |
-| M5 AI 能力 | AI 写作助手 + AI 导入（OCR/LLM）+ admin | 扫描件 10s 内生成可编辑草稿；写作助手可用 |
-| 平台侧 | admin 后置 M5；商业模式后置 | — |
+| P1 骨架 | monorepo + web/api/shared/ui 空壳 + compose + 健康检查 + 测试骨架 | `/api/health` 通；web 构建过；compose 起三服务 |
+| P2 认证 | users/sessions 表 + 注册/登录/登出/会话中间件 | 注册→登录→登出全流程 |
+| P3 简历核心 | 编辑器 + 展示页 + 主题 + 打印样式 | 分栏编辑/自动保存/发布/`/r/:slug` 展示与打印版式一致 |
+| P4 交付 | PDF + Word 导出 + 二维码 | PDF 与展示页一致；docx 可编辑 |
+| P5 AI 能力 | AI 写作助手 + AI 导入（OCR/LLM）+ admin | 扫描件 10s 内生成可编辑草稿；写作助手可用 |
+| P6 上线 | VPS 部署、域名/HTTPS、TOS 生产、备份、20 人内测 | 线上全流程可用、数据有备份 |
 
 ---
 
@@ -199,7 +209,7 @@
 ### 已确认
 | 项 | 决策 |
 |---|---|
-| 代码库 | 同仓库 `platform/` 目录（根 = V0.02 冻结） |
+| 代码库 | 同仓库 `platform/` 目录（根 = V0.02 冻结），开发分支 `v0.3` |
 | 组织 | pnpm monorepo：`apps/web` + `apps/api` + `packages/shared` + `packages/ui` |
 | 前端 | Vite + React 19 SPA + React Router + TanStack Query + Tailwind v4 |
 | 后端 | Hono + @hono/node-server + Drizzle ORM + PostgreSQL 16 |

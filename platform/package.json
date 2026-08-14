@@ -1,0 +1,10 @@
+{
+  "name": "resume-platform",
+  "version": "0.3.0",
+  "private": true,
+  "description": "简历一站到底（V0.03）— 公开简历平台 monorepo",
+  "scripts": {
+    "docs:index": "node scripts/doc-index.mjs",
+    "docs:check": "node scripts/doc-index.mjs --check"
+  }
+}
